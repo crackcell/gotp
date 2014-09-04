@@ -22,7 +22,8 @@ package genserver
 
 // Callback interface
 type GenServer interface {
-	Init(args interface{})
+	// args -> success, state
+	Init(args interface{}) (bool, interface{})
 
 	// msg, state -> reply, state
 	HandleCall(msg, state interface{}) (interface{}, interface{})

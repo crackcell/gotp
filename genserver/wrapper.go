@@ -21,6 +21,7 @@
 package genserver
 
 import (
+	//"log"
 	"sync"
 )
 
@@ -32,7 +33,6 @@ const (
 
 const (
 	reqCall = 1 << iota
-	reqInfo
 	reqCast
 )
 
@@ -51,61 +51,72 @@ type wrapper struct {
 	ch        chan wrapperReq
 	once      sync.Once
 	hasServer bool
-	server    GenServer
+	callback  GenServer
 	state     interface{}
 }
 
-func (this *wrapper) init() {
-	this.once.Do(func() {
-		this.ch = make(chan wrapperReq)
-		this.servers = []server{}
-	})
-}
-
 func (this *wrapper) handleReq() {
+	//log.Println("handleReq starts")
 	for {
+		//log.Println("handleReq")
 		req := <-this.ch
 		switch req.typ {
 		case reqCall:
-			reply, state := serv.HandleCall(req.value, this.state)
-			req.ret <- reply
+			reply, state := this.callback.HandleCall(req.value, this.state)
+			req.ret <- wrapperResp{reply, nil}
 			this.state = state
-		case reqInfo:
-			this.state = serv.HandleInfo(req.value, this.state)
 		case reqCast:
-			this.state = serv.HandleCast(req.value, this.state)
+			this.state = this.callback.HandleCast(req.value, this.state)
 		}
 	}
 }
 
-func (this *wrapper) newServer(callback GenServer) {
+func (this *wrapper) start(name string, callback GenServer, args interface{}) {
 	this.once.Do(func() {
 		this.ch = make(chan wrapperReq)
-		this.server = callback
+		this.callback = callback
 		this.hasServer = true
+		succ, state := this.callback.Init(args)
+		if !succ {
+			panic("init failed")
+		}
+		this.state = state
+		go this.handleReq()
+		//log.Println("start")
 	})
 }
 
 func (this *wrapper) checkInit() {
-	if this.hasServer {
+	if !this.hasServer {
 		panic("no callback")
 	}
 }
 
 func (this *wrapper) call(msg interface{}) interface{} {
 	this.checkInit()
-	ret := make(chan interface{})
+	ret := make(chan wrapperResp)
 	this.ch <- wrapperReq{reqCall, msg, ret}
 	v := <-ret
-	return v
+	return v.value
 }
 
-func (this *wrapper) info(name string, msg interface{}) {
+func (this *wrapper) cast(msg interface{}) {
 	this.checkInit()
-	this.ch <- wrapperReq{reqInfo, message{name, msg}, nil}
+	this.ch <- wrapperReq{reqCast, msg, nil}
 }
 
-func (this *wrapper) cast(name string, msg interface{}) {
-	this.checkInit()
-	this.ch <- wrapperReq{reqCast, message{name, msg}, nil}
+var w wrapper
+
+func Start(name string, callback GenServer, args interface{}) {
+	w.start(name, callback, args)
+}
+
+func Call(name string, req interface{}) interface{} {
+	ret := w.call(req)
+	//log.Println("call: ret:", ret)
+	return ret
+}
+
+func Cast(name string, req interface{}) {
+	w.cast(req)
 }
