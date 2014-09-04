@@ -10,7 +10,7 @@
  **************************************************************/
 
 /**
- * Message process framework like gen_server from Erlang/OTP
+ * Generic server framework inspired by Erlang/OTP.
  *
  * @file genserver.go
  * @author Menglong TAN <tanmenglong@gmail.com>
