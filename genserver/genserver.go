@@ -21,31 +21,31 @@
 package genserver
 
 import (
-	//"log"
+	"log"
 	"sync"
+)
+
+// Message tag
+const (
+	Ok = 1 << iota
+	Reply
+	Noreply // for cast
+	Stop
 )
 
 // Callback interface
 type GenServer interface {
-	// args -> success, state
-	Init(args interface{}) (bool, interface{})
-
-	// msg, state -> reply, state
-	HandleCall(msg, state interface{}) (interface{}, interface{})
-	// msg, state -> state
-	HandleInfo(msg, state interface{}) interface{}
-	// msg, state -> state
-	HandleCast(msg, state interface{}) interface{}
+	// args -> tag, state
+	Init(args interface{}) (int, interface{})
+	// msg, state -> tag, reply, state
+	HandleCall(msg, state interface{}) (int, interface{}, interface{})
+	// msg, state -> tag, state
+	HandleCast(msg, state interface{}) (int, interface{})
 }
 
-// Message type
 const (
-	signalMessage = 1 << iota
-	broadcastMessage
-)
-
-const (
-	reqCall = 1 << iota
+	reqInit = 1 << iota
+	reqCall
 	reqCast
 )
 
@@ -74,12 +74,41 @@ func (this *wrapper) handleReq() {
 		//log.Println("handleReq")
 		req := <-this.ch
 		switch req.typ {
+		case reqInit:
+			tag, state := this.callback.Init(req.value)
+			log.Println("init")
+			switch tag {
+			case Ok:
+				this.state = state
+			case Stop:
+				log.Fatal(errInit)
+				break
+			default:
+				panic(errUnknownTag)
+			}
 		case reqCall:
-			reply, state := this.callback.HandleCall(req.value, this.state)
-			req.ret <- wrapperResp{reply, nil}
-			this.state = state
+			tag, reply, state := this.callback.HandleCall(req.value, this.state)
+			switch tag {
+			case Reply:
+				req.ret <- wrapperResp{reply, nil}
+				this.state = state
+			case Stop:
+				log.Fatal(errStop)
+				break
+			default:
+				panic(errUnknownTag)
+			}
 		case reqCast:
-			this.state = this.callback.HandleCast(req.value, this.state)
+			tag, state := this.callback.HandleCast(req.value, this.state)
+			switch tag {
+			case Noreply:
+				this.state = state
+			case Stop:
+				log.Fatal(errStop)
+				break
+			default:
+				panic(errUnknownTag)
+			}
 		}
 	}
 }
@@ -89,19 +118,15 @@ func (this *wrapper) start(name string, callback GenServer, args interface{}) {
 		this.ch = make(chan wrapperReq)
 		this.callback = callback
 		this.hasServer = true
-		succ, state := this.callback.Init(args)
-		if !succ {
-			panic(ErrInit)
-		}
-		this.state = state
 		go this.handleReq()
-		//log.Println("start")
+		log.Println("start")
+		this.ch <- wrapperReq{reqInit, args, nil}
 	})
 }
 
 func (this *wrapper) checkInit() {
 	if !this.hasServer {
-		panic(ErrNoCallback)
+		panic(errNoCallback)
 	}
 }
 

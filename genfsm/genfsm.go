@@ -23,3 +23,20 @@ package genfsm
 import (
 	"sync"
 )
+
+// Message tag
+const (
+	ok = 1 << iota
+	reply
+	noreply
+	nextState
+	stop
+)
+
+type GenFsm interface {
+	// args -> succ, init_state_name, init_data
+	Init(args interface{}) (bool, string, interface{})
+
+	// msg, state_name, data -> action, next_state_name, data
+	HandleEvent()
+}

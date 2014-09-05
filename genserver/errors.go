@@ -25,6 +25,8 @@ import (
 )
 
 var (
-	ErrInit       = errors.New("init failed")
-	ErrNoCallback = errors.New("no callback")
+	errInit       = errors.New("init failed")
+	errNoCallback = errors.New("no callback")
+	errStop       = errors.New("server stopped")
+	errUnknownTag = errors.New("unknown tag")
 )

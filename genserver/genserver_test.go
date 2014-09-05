@@ -33,30 +33,23 @@ type testState struct {
 	loopCount int
 }
 
-func (this TestServer) Init(args interface{}) (bool, interface{}) {
+func (this TestServer) Init(args interface{}) (int, interface{}) {
 	log.Println("[TestServer] args:", args)
-	return true, testState{0}
+	return Ok, testState{0}
 }
 
-func (this TestServer) HandleCall(msg, state interface{}) (interface{}, interface{}) {
+func (this TestServer) HandleCall(msg, state interface{}) (int, interface{}, interface{}) {
 	s := state.(testState)
 	s.loopCount += 1
 	log.Printf("[TestServer] HandleCall: recv: %s loopCount: %d\n", msg, s.loopCount)
-	return "reply", s
+	return Reply, "reply", s
 }
 
-func (this TestServer) HandleInfo(msg, state interface{}) interface{} {
-	s := state.(testState)
-	s.loopCount += 1
-	log.Printf("[TestServer] HandleInfo: recv: %s loopCount: %d\n", msg, s.loopCount)
-	return s
-}
-
-func (this TestServer) HandleCast(msg, state interface{}) interface{} {
+func (this TestServer) HandleCast(msg, state interface{}) (int, interface{}) {
 	s := state.(testState)
 	s.loopCount += 1
 	log.Printf("[TestServer] HandleCast: recv: %s loopCount: %d\n", msg, s.loopCount)
-	return s
+	return Noreply, s
 }
 
 func TestStart(t *testing.T) {
