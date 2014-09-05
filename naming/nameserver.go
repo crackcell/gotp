@@ -38,6 +38,14 @@ type nameServer struct {
 	servers map[string]*genserver.GenServer
 }
 
+func (this *nameServer) init() {
+	this.once.Do(func() {
+		this.ch = make(chan goserv.Req)
+		this.servers = make(make[string] * genserver.GenServer)
+		go this.handleReq()
+	})
+}
+
 func (this *nameServer) handleReq() {
 	for {
 		req := <-this.ch

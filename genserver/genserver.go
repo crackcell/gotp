@@ -45,8 +45,7 @@ type Callback interface {
 }
 
 const (
-	reqInit = 1 << iota
-	reqCall
+	reqCall = 1 << iota
 	reqCast
 )
 
@@ -64,18 +63,6 @@ func (this *GenServer) handleReq() {
 		//log.Println("handleReq")
 		req := <-this.ch
 		switch req.Type {
-		case reqInit:
-			tag, state := this.callback.Init(req.Value)
-			log.Println("init")
-			switch tag {
-			case Ok:
-				this.state = state
-			case Stop:
-				log.Fatal(goserv.ErrInit)
-				break
-			default:
-				panic(goserv.ErrUnknownTag)
-			}
 		case reqCall:
 			tag, reply, state := this.callback.HandleCall(req.Value, this.state)
 			switch tag {
@@ -103,14 +90,28 @@ func (this *GenServer) handleReq() {
 	}
 }
 
+func (this *GenServer) init(args interface{}) bool {
+	tag, state := this.callback.Init(args)
+	switch tag {
+	case Ok:
+		this.state = state
+	case Stop:
+		log.Fatal(goserv.ErrInit)
+		return false
+	default:
+		panic(goserv.ErrUnknownTag)
+	}
+	return true
+}
+
 func (this *GenServer) start(name string, callback Callback, args interface{}) {
 	this.once.Do(func() {
 		this.ch = make(chan goserv.Req)
 		this.callback = callback
 		this.hasServer = true
-		go this.handleReq()
-		log.Println("start")
-		this.ch <- goserv.Req{reqInit, args, nil}
+		if this.init(args) {
+			go this.handleReq()
+		}
 	})
 }
 
