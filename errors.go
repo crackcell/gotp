@@ -18,15 +18,17 @@
  *
  **/
 
-package genserver
+package goserv
 
 import (
 	"errors"
 )
 
 var (
-	errInit       = errors.New("init failed")
-	errNoCallback = errors.New("no callback")
-	errStop       = errors.New("server stopped")
-	errUnknownTag = errors.New("unknown tag")
+	ErrInit             = errors.New("init failed")
+	ErrNoCallback       = errors.New("no callback")
+	ErrStop             = errors.New("server stopped")
+	ErrUnknownTag       = errors.New("unknown tag")
+	ErrAlreadyRegisterd = errors.New("already registered")
+	ErrAlreadyStarted   = errors.New("already started")
 )

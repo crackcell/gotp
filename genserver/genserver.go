@@ -21,6 +21,7 @@
 package genserver
 
 import (
+	"github.com/crackcell/goserv"
 	"log"
 	"sync"
 )
@@ -34,7 +35,7 @@ const (
 )
 
 // Callback interface
-type GenServer interface {
+type Callback interface {
 	// args -> tag, state
 	Init(args interface{}) (int, interface{})
 	// msg, state -> tag, reply, state
@@ -49,103 +50,92 @@ const (
 	reqCast
 )
 
-type wrapperReq struct {
-	typ   int
-	value interface{}
-	ret   chan wrapperResp
-}
-
-type wrapperResp struct {
-	value interface{}
-	err   error
-}
-
-type wrapper struct {
-	ch        chan wrapperReq
+type GenServer struct {
+	ch        chan goserv.Req
 	once      sync.Once
 	hasServer bool
-	callback  GenServer
+	callback  Callback
 	state     interface{}
 }
 
-func (this *wrapper) handleReq() {
+func (this *GenServer) handleReq() {
 	//log.Println("handleReq starts")
 	for {
 		//log.Println("handleReq")
 		req := <-this.ch
-		switch req.typ {
+		switch req.Type {
 		case reqInit:
-			tag, state := this.callback.Init(req.value)
+			tag, state := this.callback.Init(req.Value)
 			log.Println("init")
 			switch tag {
 			case Ok:
 				this.state = state
 			case Stop:
-				log.Fatal(errInit)
+				log.Fatal(goserv.ErrInit)
 				break
 			default:
-				panic(errUnknownTag)
+				panic(goserv.ErrUnknownTag)
 			}
 		case reqCall:
-			tag, reply, state := this.callback.HandleCall(req.value, this.state)
+			tag, reply, state := this.callback.HandleCall(req.Value, this.state)
 			switch tag {
 			case Reply:
-				req.ret <- wrapperResp{reply, nil}
+				req.Ret <- goserv.Resp{reply, nil}
 				this.state = state
 			case Stop:
-				log.Fatal(errStop)
+				log.Fatal(goserv.ErrStop)
 				break
 			default:
-				panic(errUnknownTag)
+				panic(goserv.ErrUnknownTag)
 			}
 		case reqCast:
-			tag, state := this.callback.HandleCast(req.value, this.state)
+			tag, state := this.callback.HandleCast(req.Value, this.state)
 			switch tag {
 			case Noreply:
 				this.state = state
 			case Stop:
-				log.Fatal(errStop)
+				log.Fatal(goserv.ErrStop)
 				break
 			default:
-				panic(errUnknownTag)
+				panic(goserv.ErrUnknownTag)
 			}
 		}
 	}
 }
 
-func (this *wrapper) start(name string, callback GenServer, args interface{}) {
+func (this *GenServer) start(name string, callback Callback, args interface{}) {
 	this.once.Do(func() {
-		this.ch = make(chan wrapperReq)
+		this.ch = make(chan goserv.Req)
 		this.callback = callback
 		this.hasServer = true
 		go this.handleReq()
 		log.Println("start")
-		this.ch <- wrapperReq{reqInit, args, nil}
+		this.ch <- goserv.Req{reqInit, args, nil}
 	})
 }
 
-func (this *wrapper) checkInit() {
+func (this *GenServer) checkInit() {
 	if !this.hasServer {
-		panic(errNoCallback)
+		panic(goserv.ErrNoCallback)
 	}
 }
 
-func (this *wrapper) call(msg interface{}) interface{} {
+func (this *GenServer) call(msg interface{}) interface{} {
 	this.checkInit()
-	ret := make(chan wrapperResp)
-	this.ch <- wrapperReq{reqCall, msg, ret}
+	ret := make(chan goserv.Resp)
+	this.ch <- goserv.Req{reqCall, msg, ret}
 	v := <-ret
-	return v.value
+	return v.Value
 }
 
-func (this *wrapper) cast(msg interface{}) {
+func (this *GenServer) cast(msg interface{}) {
 	this.checkInit()
-	this.ch <- wrapperReq{reqCast, msg, nil}
+	this.ch <- goserv.Req{reqCast, msg, nil}
 }
 
-var w wrapper
+var w GenServer
 
-func Start(name string, callback GenServer, args interface{}) {
+func Start(name string, callback Callback, args interface{}) {
 	w.start(name, callback, args)
 }
 
