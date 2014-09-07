@@ -36,11 +36,14 @@ const (
 
 // Callback interface
 type Callback interface {
-	// args -> tag, state
+	// args -> Ok, $State
+	//      -> Stop, $Reason
 	Init(args interface{}) (int, interface{})
-	// msg, state -> tag, reply, state
+	// msg, state -> Reply, $Reply, $State
+	//            -> Stop, $Reason
 	HandleCall(msg, state interface{}) (int, interface{}, interface{})
-	// msg, state -> tag, state
+	// msg, state -> Reply, $State
+	//            -> Stop, $Reason
 	HandleCast(msg, state interface{}) (int, interface{})
 }
 
@@ -70,7 +73,7 @@ func (this *GenServer) handleReq() {
 				req.Ret <- goserv.Resp{reply, nil}
 				this.state = state
 			case Stop:
-				log.Fatal(goserv.ErrStop)
+				log.Fatal(goserv.ErrStop, ", reason: ", reply)
 				break
 			default:
 				panic(goserv.ErrUnknownTag)
@@ -81,7 +84,7 @@ func (this *GenServer) handleReq() {
 			case Noreply:
 				this.state = state
 			case Stop:
-				log.Fatal(goserv.ErrStop)
+				log.Fatal(goserv.ErrStop, ", reason: ", reply)
 				break
 			default:
 				panic(goserv.ErrUnknownTag)

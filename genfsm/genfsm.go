@@ -34,9 +34,11 @@ const (
 )
 
 type GenFsm interface {
-	// args -> succ, init_state_name, init_data
+	// args -> Ok, $InitStateName, $InitData
+	//      -> Stop, $Reason
 	Init(args interface{}) (bool, string, interface{})
 
-	// msg, state_name, data -> action, next_state_name, data
-	HandleEvent()
+	// msg, state_name, data -> NextState, $NextStateName, $NewData
+	//                       -> Stop, $Reason
+	HandleEvent(msg interface{}, statename string, data interface{}) (int, string, interface{})
 }
