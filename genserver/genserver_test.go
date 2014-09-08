@@ -26,6 +26,19 @@ import (
 	"time"
 )
 
+// Message tage
+const (
+	call1 = 1 << iota
+	call2
+	cast1
+	cast2
+)
+
+type Msg struct {
+	Type  int
+	Value interface{}
+}
+
 type TestServer struct {
 }
 
@@ -41,30 +54,60 @@ func (this TestServer) Init(args interface{}) (int, interface{}) {
 func (this TestServer) HandleCall(msg, state interface{}) (int, interface{}, interface{}) {
 	s := state.(testState)
 	s.loopCount += 1
-	log.Printf("[TestServer] HandleCall: recv: %s loopCount: %d\n", msg, s.loopCount)
-	return Reply, "reply", s
+	m := msg.(Msg)
+	log.Printf("[TestServer] HandleCall: recv: %s loopCount: %d\n", m.Value, s.loopCount)
+	switch m.Type {
+	case call1:
+		return Reply, "reply", s
+	case call2:
+		return Stop, "call2", s
+	default:
+		panic("wrong case")
+	}
 }
 
-func (this TestServer) HandleCast(msg, state interface{}) (int, interface{}) {
+func (this TestServer) HandleCast(msg, state interface{}) (int, interface{}, interface{}) {
 	s := state.(testState)
 	s.loopCount += 1
-	log.Printf("[TestServer] HandleCast: recv: %s loopCount: %d\n", msg, s.loopCount)
-	return Noreply, s
+	m := msg.(Msg)
+	log.Printf("[TestServer] HandleCast: recv: %s loopCount: %d\n", m.Value, s.loopCount)
+	switch m.Type {
+	case cast1:
+		return Noreply, nil, s
+	case cast2:
+		return Stop, "cast2", s
+	default:
+		panic("wrong case")
+	}
+}
+
+func (this TestServer) Terminate(reason, state interface{}) {
+	log.Printf("[TestServer] Terminate: reason: %s\n", reason)
 }
 
 func TestStart(t *testing.T) {
 	Start("TestServer", TestServer{}, "args")
 }
 
-func TestCall(t *testing.T) {
+func TestCall1(t *testing.T) {
 	time.Sleep(2000)
-	ret := Call("TestServer", "call args")
+	ret := Call("TestServer", Msg{call1, "call - 1"})
 	log.Println("[TestCall]", ret)
-	ret = Call("TestServer", "call args")
+	ret = Call("TestServer", Msg{call1, "call1 - 2"})
 	log.Println("[TestCall]", ret)
 }
 
-func TestCast(t *testing.T) {
-	Cast("TestServer", "cast args")
-	log.Println("[TestCast]")
+func TestCast1(t *testing.T) {
+	Cast("TestServer", Msg{cast1, "cast1 - 1"})
+}
+
+/*
+func TestCast2(t *testing.T) {
+	Cast("TestServer", Msg{cast2, "cast2 - 2"})
+}
+*/
+
+func TestCall2(t *testing.T) {
+	ret := Call("TestServer", Msg{call2, "call2"})
+	log.Println("[TestCast]", ret)
 }

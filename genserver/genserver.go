@@ -40,11 +40,13 @@ type Callback interface {
 	//      -> Stop, $Reason
 	Init(args interface{}) (int, interface{})
 	// msg, state -> Reply, $Reply, $State
-	//            -> Stop, $Reason
+	//            -> Stop, $Reason, $State
 	HandleCall(msg, state interface{}) (int, interface{}, interface{})
-	// msg, state -> Reply, $State
-	//            -> Stop, $Reason
-	HandleCast(msg, state interface{}) (int, interface{})
+	// msg, state -> Reply, nil, $State
+	//            -> Stop, $Reason, $State
+	HandleCast(msg, state interface{}) (int, interface{}, interface{})
+	// reason, state
+	Terminate(reason, state interface{})
 }
 
 const (
@@ -65,30 +67,30 @@ func (this *GenServer) handleReq() {
 	for {
 		//log.Println("handleReq")
 		req := <-this.ch
+		var tag int
+		var reply, state interface{}
+
 		switch req.Type {
 		case reqCall:
-			tag, reply, state := this.callback.HandleCall(req.Value, this.state)
-			switch tag {
-			case Reply:
-				req.Ret <- goserv.Resp{reply, nil}
-				this.state = state
-			case Stop:
-				log.Fatal(goserv.ErrStop, ", reason: ", reply)
-				break
-			default:
-				panic(goserv.ErrUnknownTag)
-			}
+			tag, reply, state = this.callback.HandleCall(req.Value, this.state)
 		case reqCast:
-			tag, state := this.callback.HandleCast(req.Value, this.state)
-			switch tag {
-			case Noreply:
-				this.state = state
-			case Stop:
-				log.Fatal(goserv.ErrStop, ", reason: ", reply)
-				break
-			default:
-				panic(goserv.ErrUnknownTag)
+			tag, reply, state = this.callback.HandleCast(req.Value, this.state)
+		}
+
+		this.state = state
+		switch tag {
+		case Reply:
+			req.Ret <- goserv.Resp{reply, nil}
+		case Noreply: // DO NOTHING
+		case Stop:
+			this.callback.Terminate(reply, this.state) // Reason, state
+			if req.Type == reqCall {
+				req.Ret <- goserv.Resp{nil, nil}
 			}
+			log.Print(goserv.ErrStop, ", reason: ", reply)
+			break
+		default:
+			panic(goserv.ErrUnknownTag)
 		}
 	}
 }
