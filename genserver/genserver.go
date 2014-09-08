@@ -109,7 +109,7 @@ func (this *GenServer) init(args interface{}) bool {
 	return true
 }
 
-func (this *GenServer) start(name string, callback Callback, args interface{}) {
+func (this *GenServer) Start(callback Callback, args interface{}) {
 	this.once.Do(func() {
 		this.ch = make(chan goserv.Req)
 		this.callback = callback
@@ -126,7 +126,7 @@ func (this *GenServer) checkInit() {
 	}
 }
 
-func (this *GenServer) call(msg interface{}) interface{} {
+func (this *GenServer) Call(msg interface{}) interface{} {
 	this.checkInit()
 	ret := make(chan goserv.Resp)
 	this.ch <- goserv.Req{reqCall, msg, ret}
@@ -134,23 +134,7 @@ func (this *GenServer) call(msg interface{}) interface{} {
 	return v.Value
 }
 
-func (this *GenServer) cast(msg interface{}) {
+func (this *GenServer) Cast(msg interface{}) {
 	this.checkInit()
 	this.ch <- goserv.Req{reqCast, msg, nil}
-}
-
-var w GenServer
-
-func Start(name string, callback Callback, args interface{}) {
-	w.start(name, callback, args)
-}
-
-func Call(name string, req interface{}) interface{} {
-	ret := w.call(req)
-	//log.Println("call: ret:", ret)
-	return ret
-}
-
-func Cast(name string, req interface{}) {
-	w.cast(req)
 }

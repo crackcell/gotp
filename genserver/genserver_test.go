@@ -39,8 +39,7 @@ type Msg struct {
 	Value interface{}
 }
 
-type TestServer struct {
-}
+type TestServer struct{}
 
 type testState struct {
 	loopCount int
@@ -85,29 +84,31 @@ func (this TestServer) Terminate(reason, state interface{}) {
 	log.Printf("[TestServer] Terminate: reason: %s\n", reason)
 }
 
+var testServer GenServer
+
 func TestStart(t *testing.T) {
-	Start("TestServer", TestServer{}, "args")
+	testServer.Start(TestServer{}, "args")
 }
 
 func TestCall1(t *testing.T) {
 	time.Sleep(2000)
-	ret := Call("TestServer", Msg{call1, "call - 1"})
+	ret := testServer.Call(Msg{call1, "call - 1"})
 	log.Println("[TestCall]", ret)
-	ret = Call("TestServer", Msg{call1, "call1 - 2"})
+	ret = testServer.Call(Msg{call1, "call1 - 2"})
 	log.Println("[TestCall]", ret)
 }
 
 func TestCast1(t *testing.T) {
-	Cast("TestServer", Msg{cast1, "cast1 - 1"})
+	testServer.Cast(Msg{cast1, "cast1 - 1"})
 }
 
 /*
 func TestCast2(t *testing.T) {
-	Cast("TestServer", Msg{cast2, "cast2 - 2"})
+	Cast(Msg{cast2, "cast2 - 2"})
 }
 */
 
 func TestCall2(t *testing.T) {
-	ret := Call("TestServer", Msg{call2, "call2"})
+	ret := testServer.Call(Msg{call2, "call2"})
 	log.Println("[TestCast]", ret)
 }

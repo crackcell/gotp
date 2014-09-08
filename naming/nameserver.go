@@ -29,13 +29,13 @@ import (
 
 // Request type
 const (
-	reqRegister = 1 << iota
+	reqRegisterProc = 1 << iota
 )
 
 type nameServer struct {
 	ch      chan goserv.Req
 	once    sync.Once
-	servers map[string]*genserver.GenServer
+	servers map[int]*genserver.GenServer
 }
 
 func (this *nameServer) init() {

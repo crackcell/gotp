@@ -41,7 +41,7 @@ type GenFsm interface {
 	// msg, state_name, data -> NextState, $NextStateName, $NewData
 	//                       -> Stop, $Reason
 	HandleEvent(msg interface{}, statename string, data interface{}) (int, string, interface{})
-	HandleSyncEvent(msg interface{})
+	HandleAllEvent(msg interface{})
 }
 
 func SendEvent() {}
