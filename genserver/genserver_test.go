@@ -51,6 +51,7 @@ func (this testServer) Init(args interface{}) (int, interface{}) {
 }
 
 func (this testServer) HandleCall(msg, state interface{}) (int, interface{}, interface{}) {
+
 	s := state.(testState)
 	s.loopCount += 1
 	m := msg.(Msg)

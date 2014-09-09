@@ -21,6 +21,7 @@
 package genfsm
 
 import (
+	"github.com/crackcell/gotp"
 	"github.com/crackcell/gotp/genserver"
 	"log"
 	"sync"
@@ -31,17 +32,38 @@ type genFsmCallback struct{}
 type genFsmState struct {
 	callback Callback
 	state    interface{}
+	data     interface{}
+}
+
+const (
+	reqTransferState = 1 << iota
+)
+
+type genFsmCallbackMsg struct {
+	tag  int
+	args []interface{}
 }
 
 type initArgs struct {
-	args interface{}
+	args     interface{}
+	callback Callback
 }
 
 func (this GenFsmCallback) Init(args interface{}) (int, interface{}) {
 	log.Println("[GenFsm] init:", args)
-	c := args.(Callback)
-	tag, nextState, data := c.Init()
-	return Ok, genFsmState{callback: args.(Callback)}
+	a := args.(initArgs)
+	tag, nextState, data := a.callback.Init(a.args)
+	return Ok, genFsmState{callback: args.(Callback), state: nextState, data: data}
+}
+
+func (this GenFsmCallback) HandleCall(msg, state interface{}) (int, interface{}, interface{}) {
+	log.Println("[GenFsm] call")
+	m := msg.(genFsmCallbackMsg)
+	switch m.tag {
+	case reqTransferState:
+	default:
+		panic(gotp.ErrUnknownTag)
+	}
 }
 
 // GenFsm message tag
