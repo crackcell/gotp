@@ -39,22 +39,22 @@ type Msg struct {
 	Value interface{}
 }
 
-type TestServer struct{}
+type testServer struct{}
 
 type testState struct {
 	loopCount int
 }
 
-func (this TestServer) Init(args interface{}) (int, interface{}) {
-	log.Println("[TestServer] args:", args)
+func (this testServer) Init(args interface{}) (int, interface{}) {
+	log.Println("[testServer] args:", args)
 	return Ok, testState{0}
 }
 
-func (this TestServer) HandleCall(msg, state interface{}) (int, interface{}, interface{}) {
+func (this testServer) HandleCall(msg, state interface{}) (int, interface{}, interface{}) {
 	s := state.(testState)
 	s.loopCount += 1
 	m := msg.(Msg)
-	log.Printf("[TestServer] HandleCall: recv: %s loopCount: %d\n", m.Value, s.loopCount)
+	log.Printf("[testServer] HandleCall: recv: %s loopCount: %d\n", m.Value, s.loopCount)
 	switch m.Type {
 	case call1:
 		return Reply, "reply", s
@@ -65,11 +65,11 @@ func (this TestServer) HandleCall(msg, state interface{}) (int, interface{}, int
 	}
 }
 
-func (this TestServer) HandleCast(msg, state interface{}) (int, interface{}, interface{}) {
+func (this testServer) HandleCast(msg, state interface{}) (int, interface{}, interface{}) {
 	s := state.(testState)
 	s.loopCount += 1
 	m := msg.(Msg)
-	log.Printf("[TestServer] HandleCast: recv: %s loopCount: %d\n", m.Value, s.loopCount)
+	log.Printf("[testServer] HandleCast: recv: %s loopCount: %d\n", m.Value, s.loopCount)
 	switch m.Type {
 	case cast1:
 		return Noreply, nil, s
@@ -80,26 +80,26 @@ func (this TestServer) HandleCast(msg, state interface{}) (int, interface{}, int
 	}
 }
 
-func (this TestServer) Terminate(reason, state interface{}) {
-	log.Printf("[TestServer] Terminate: reason: %s\n", reason)
+func (this testServer) Terminate(reason, state interface{}) {
+	log.Printf("[testServer] Terminate: reason: %s\n", reason)
 }
 
-var testServer GenServer
+var server GenServer
 
 func TestStart(t *testing.T) {
-	testServer.Start(TestServer{}, "args")
+	server.Start(testServer{}, "args")
 }
 
 func TestCall1(t *testing.T) {
 	time.Sleep(2000)
-	ret := testServer.Call(Msg{call1, "call - 1"})
+	ret := server.Call(Msg{call1, "call - 1"})
 	log.Println("[TestCall]", ret)
-	ret = testServer.Call(Msg{call1, "call1 - 2"})
+	ret = server.Call(Msg{call1, "call1 - 2"})
 	log.Println("[TestCall]", ret)
 }
 
 func TestCast1(t *testing.T) {
-	testServer.Cast(Msg{cast1, "cast1 - 1"})
+	server.Cast(Msg{cast1, "cast1 - 1"})
 }
 
 /*
@@ -109,6 +109,6 @@ func TestCast2(t *testing.T) {
 */
 
 func TestCall2(t *testing.T) {
-	ret := testServer.Call(Msg{call2, "call2"})
+	ret := server.Call(Msg{call2, "call2"})
 	log.Println("[TestCast]", ret)
 }

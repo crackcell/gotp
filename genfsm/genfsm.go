@@ -22,9 +22,29 @@ package genfsm
 
 import (
 	"github.com/crackcell/gotp/genserver"
+	"log"
 	"sync"
 )
 
+type genFsmCallback struct{}
+
+type genFsmState struct {
+	callback Callback
+	state    interface{}
+}
+
+type initArgs struct {
+	args interface{}
+}
+
+func (this GenFsmCallback) Init(args interface{}) (int, interface{}) {
+	log.Println("[GenFsm] init:", args)
+	c := args.(Callback)
+	tag, nextState, data := c.Init()
+	return Ok, genFsmState{callback: args.(Callback)}
+}
+
+// GenFsm message tag
 const (
 	reqSend = 1 << iota
 	reqSyncSend
