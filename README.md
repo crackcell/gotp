@@ -9,4 +9,4 @@
 gotp
 ====
 
-Golang server framework inspired by Erlang/OTP.
+Golang service framework inspired by Erlang/OTP.
