@@ -26,29 +26,6 @@ import (
 	"sync"
 )
 
-// Message tag
-const (
-	Ok = 1 << iota
-	Reply
-	Noreply // for cast
-	Stop
-)
-
-// Callback interface
-type Callback interface {
-	// args -> Ok, $State
-	//      -> Stop, $Reason
-	Init(args interface{}) (int, interface{})
-	// msg, state -> Reply, $Reply, $State
-	//            -> Stop, $Reason, $State
-	HandleCall(msg, state interface{}) (int, interface{}, interface{})
-	// msg, state -> Reply, nil, $State
-	//            -> Stop, $Reason, $State
-	HandleCast(msg, state interface{}) (int, interface{}, interface{})
-	// reason, state
-	Terminate(reason, state interface{})
-}
-
 const (
 	reqCall = 1 << iota
 	reqCast

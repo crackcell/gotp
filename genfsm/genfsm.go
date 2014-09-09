@@ -25,24 +25,17 @@ import (
 	"sync"
 )
 
-// Message tag
 const (
-	ok = 1 << iota
-	reply
-	noreply
-	nextState
-	stop
+	reqSend = 1 << iota
+	reqSyncSend
 )
 
-type GenFsm interface {
-	// args -> Ok, $InitStateName, $InitData
-	//      -> Stop, $Reason
-	Init(args interface{}) (bool, string, interface{})
+type GenFsm struct {
+	server GenServer
+}
 
-	// msg, state_name, data -> NextState, $NextStateName, $NewData
-	//                       -> Stop, $Reason
-	HandleEvent(msg interface{}, statename string, data interface{}) (int, string, interface{})
-	HandleAllEvent(msg interface{})
+func (this *GenFsm) Start(callback Callback, args interface{}) {
+
 }
 
 func (this *GenFsm) SendEvent() {}
