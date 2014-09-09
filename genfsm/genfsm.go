@@ -21,6 +21,7 @@
 package genfsm
 
 import (
+	"github.com/crackcell/gotp/genserver"
 	"sync"
 )
 
@@ -44,6 +45,6 @@ type GenFsm interface {
 	HandleAllEvent(msg interface{})
 }
 
-func SendEvent() {}
+func (this *GenFsm) SendEvent() {}
 
-func SyncSendEvent() {}
+func (this *GenFsm) SyncSendEvent() {}

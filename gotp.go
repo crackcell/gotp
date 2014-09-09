@@ -12,13 +12,13 @@
 /**
  *
  *
- * @file goserv.go
+ * @file gotp.go
  * @author Menglong TAN <tanmenglong@gmail.com>
  * @date Fri Sep  5 16:07:59 2014
  *
  **/
 
-package goserv
+package gotp
 
 type Req struct {
 	Type  int

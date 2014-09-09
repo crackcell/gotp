@@ -21,8 +21,8 @@
 package naming
 
 import (
-	"github.com/crackcell/goserv"
-	"github.com/crackcell/goserv/genserver"
+	"github.com/crackcell/gotp"
+	"github.com/crackcell/gotp/genserver"
 	"log"
 	"sync"
 )
@@ -33,14 +33,14 @@ const (
 )
 
 type nameServer struct {
-	ch      chan goserv.Req
+	ch      chan gotp.Req
 	once    sync.Once
 	servers map[int]*genserver.GenServer
 }
 
 func (this *nameServer) init() {
 	this.once.Do(func() {
-		this.ch = make(chan goserv.Req)
+		this.ch = make(chan gotp.Req)
 		this.servers = make(make[string] * genserver.GenServer)
 		go this.handleReq()
 	})
@@ -52,7 +52,7 @@ func (this *nameServer) handleReq() {
 		switch req.Type {
 		case reqRegister:
 		default:
-			panic(goserv.errUnknownTag)
+			panic(gotp.errUnknownTag)
 		}
 	}
 }

@@ -18,7 +18,7 @@
  *
  **/
 
-package goserv
+package gotp
 
 import (
 	"errors"

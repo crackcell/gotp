@@ -21,7 +21,7 @@
 package genserver
 
 import (
-	"github.com/crackcell/goserv"
+	"github.com/crackcell/gotp"
 	"log"
 	"sync"
 )
@@ -55,7 +55,7 @@ const (
 )
 
 type GenServer struct {
-	ch        chan goserv.Req
+	ch        chan gotp.Req
 	once      sync.Once
 	hasServer bool
 	callback  Callback
@@ -80,17 +80,17 @@ func (this *GenServer) handleReq() {
 		this.state = state
 		switch tag {
 		case Reply:
-			req.Ret <- goserv.Resp{reply, nil}
+			req.Ret <- gotp.Resp{reply, nil}
 		case Noreply: // DO NOTHING
 		case Stop:
 			this.callback.Terminate(reply, this.state) // Reason, state
 			if req.Type == reqCall {
-				req.Ret <- goserv.Resp{nil, nil}
+				req.Ret <- gotp.Resp{nil, nil}
 			}
-			log.Print(goserv.ErrStop, ", reason: ", reply)
+			log.Print(gotp.ErrStop, ", reason: ", reply)
 			break
 		default:
-			panic(goserv.ErrUnknownTag)
+			panic(gotp.ErrUnknownTag)
 		}
 	}
 }
@@ -101,17 +101,17 @@ func (this *GenServer) init(args interface{}) bool {
 	case Ok:
 		this.state = state
 	case Stop:
-		log.Fatal(goserv.ErrInit)
+		log.Fatal(gotp.ErrInit)
 		return false
 	default:
-		panic(goserv.ErrUnknownTag)
+		panic(gotp.ErrUnknownTag)
 	}
 	return true
 }
 
 func (this *GenServer) Start(callback Callback, args interface{}) {
 	this.once.Do(func() {
-		this.ch = make(chan goserv.Req)
+		this.ch = make(chan gotp.Req)
 		this.callback = callback
 		this.hasServer = true
 		if this.init(args) {
@@ -122,19 +122,19 @@ func (this *GenServer) Start(callback Callback, args interface{}) {
 
 func (this *GenServer) checkInit() {
 	if !this.hasServer {
-		panic(goserv.ErrNoCallback)
+		panic(gotp.ErrNoCallback)
 	}
 }
 
 func (this *GenServer) Call(msg interface{}) interface{} {
 	this.checkInit()
-	ret := make(chan goserv.Resp)
-	this.ch <- goserv.Req{reqCall, msg, ret}
+	ret := make(chan gotp.Resp)
+	this.ch <- gotp.Req{reqCall, msg, ret}
 	v := <-ret
 	return v.Value
 }
 
 func (this *GenServer) Cast(msg interface{}) {
 	this.checkInit()
-	this.ch <- goserv.Req{reqCast, msg, nil}
+	this.ch <- gotp.Req{reqCast, msg, nil}
 }
