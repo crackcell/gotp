@@ -24,7 +24,6 @@ import (
 	"github.com/crackcell/gotp"
 	"github.com/crackcell/gotp/genserver"
 	"log"
-	"sync"
 )
 
 type genFsmCallback struct{}
@@ -49,14 +48,14 @@ type initArgs struct {
 	callback Callback
 }
 
-func (this GenFsmCallback) Init(args interface{}) (int, interface{}) {
+func (this genFsmCallback) Init(args interface{}) (int, interface{}) {
 	log.Println("[GenFsm] init:", args)
 	a := args.(initArgs)
 	tag, nextState, data := a.callback.Init(a.args)
-	return Ok, genFsmState{callback: args.(Callback), state: nextState, data: data}
+	return genserver.Ok, genFsmState{args.(Callback), nextState, data}
 }
 
-func (this GenFsmCallback) HandleCall(msg, state interface{}) (int, interface{}, interface{}) {
+func (this genFsmCallback) HandleCall(msg, state interface{}) (int, interface{}, interface{}) {
 	log.Println("[GenFsm] call")
 	m := msg.(genFsmCallbackMsg)
 	switch m.tag {
@@ -66,6 +65,20 @@ func (this GenFsmCallback) HandleCall(msg, state interface{}) (int, interface{},
 	}
 }
 
+func (this genFsmCallback) HandleCast(msg, state interface{}) (int, interface{}, interface{}) {
+	log.Println("[GenFsm] cast")
+	m := msg.(genFsmCallbackMsg)
+	switch m.tag {
+	case reqTransferState:
+	default:
+		panic(gotp.ErrUnknownTag)
+	}
+}
+
+func (this genFsmCallback) Terminate(reason, state interface{}) {
+	log.Printf("[GenFsm] Terminate: reason: %s\n", reason)
+}
+
 // GenFsm message tag
 const (
 	reqSend = 1 << iota
@@ -73,11 +86,11 @@ const (
 )
 
 type GenFsm struct {
-	server GenServer
+	server genserver.GenServer
 }
 
 func (this *GenFsm) Start(callback Callback, args interface{}) {
-
+	this.server.Start(genFsmCallback, initArgs{args, callback})
 }
 
 func (this *GenFsm) SendEvent() {}
