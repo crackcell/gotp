@@ -31,7 +31,7 @@ type genFsmCallback struct{}
 type genFsmState struct {
 	callback     Callback
 	data         interface{}
-	state        string
+	state        int
 	handlers     map[string]EventHandler
 	syncHandlers map[string]SyncEventHandler
 }
@@ -56,19 +56,52 @@ type initArgs struct {
 func (this genFsmCallback) Init(args interface{}) (int, interface{}) {
 	log.Println("[GenFsm] init:", args)
 	a := args.(initArgs)
-	tag, nextState, data := a.callback.Init(a.args)
-	return genserver.Ok, genFsmState{callback: args.(Callback), data: data,
-		valid: false, state: nextState, currentHandler: nil, // nil handler, need init
-		make(map[string]EventHandler),
-		make(map[string]EventHandler)}
+	tag, params := a.callback.Init(a.args)
+	if len(params) < 2 {
+		panic(gotp.ErrInvalidArgs)
+	}
+	switch params[0].(int) {
+	case Ok:
+		return genserver.Ok, genFsmState{
+			callback: args.(Callback),
+			data:     data,
+			state:    nextState,
+			make(map[string]EventHandler),
+			make(map[string]EventHandler)}
+	case Stop:
+		return genserver.Stop, gotp.ErrInit
+	default:
+		panic(gotp.ErrUnknownTag)
+	}
 }
 
 func (this genFsmCallback) HandleCall(msg, state interface{}) (int, interface{}, interface{}) {
 	log.Println("[GenFsm] call")
 	m := msg.(genFsmCallbackMsg)
+	s := state.(genFsmState)
 	switch m.tag {
 	case reqSendSyncEvent:
-		// TODO
+		handler, err := this.syncHandlers[this.state]
+		if err != nil {
+			panic(gotp.ErrNoHandler)
+		}
+		tag, params := handler(msg, this.data)
+		if len(params) < 2 {
+			panic(gotp.ErrInvalidArgs)
+		}
+		switch tag {
+		case NextState: // params = {reply, next_state, new_data}
+			reply := params[0]
+			state := params[1].(int)
+			log.Printf("send_sync_event: %d -> $d\n", this.state, state)
+			s.state = state
+			s.data = params[2]
+			return genserver.Reply, reply, s
+		case Stop:
+			return genserver.Stop, gotp.ErrStop, s
+		default:
+			panic(gotp.ErrUnknownTag)
+		}
 	default:
 		panic(gotp.ErrUnknownTag)
 	}
@@ -77,6 +110,7 @@ func (this genFsmCallback) HandleCall(msg, state interface{}) (int, interface{},
 func (this genFsmCallback) HandleCast(msg, state interface{}) (int, interface{}, interface{}) {
 	log.Println("[GenFsm] cast")
 	m := msg.(genFsmCallbackMsg)
+	s := state.(genFsmState)
 	switch m.tag {
 	case reqRegisterHandler:
 		// Args:
@@ -87,7 +121,7 @@ func (this genFsmCallback) HandleCast(msg, state interface{}) (int, interface{},
 		}
 		state := m.args[0].(int)
 		handler := m.args[1].(EventHandler)
-		this.handlers[stateName] = handler
+		s.handlers[stateName] = handler
 	case reqRegisterSyncHandler:
 		// Args:
 		//  0 - state name
@@ -97,9 +131,28 @@ func (this genFsmCallback) HandleCast(msg, state interface{}) (int, interface{},
 		}
 		state := m.args[0].(int)
 		handler := m.args[1].(EventHandler)
-		this.syncHandlers[stateName] = handler
+		s.handlers[state] = handler
 	case reqSendEvent:
-		// TODO
+		handler, err := this.handlers[this.state]
+		if err != nil {
+			panic(gotp.ErrNoHandler)
+		}
+		tag, params := handler(msg, this.data)
+		if len(params) != 2 { // not {$NextState, $NewData} or {$Reason, $NewData}
+			panic(gotp.ErrInvalidArgs)
+		}
+		switch tag {
+		case NextState:
+			state := params[0].(int)
+			log.Printf("send_event: %d -> %d\n", this.state, state)
+			s.state = state
+			s.data = params[1]
+			return genserver.Noreply, nil, s
+		case Stop:
+			return genserver.Stop, gotp.ErrStop, s
+		default:
+			panic(gotp.ErrUnknownTag)
+		}
 	default:
 		panic(gotp.ErrUnknownTag)
 	}
@@ -122,3 +175,5 @@ func (this *GenFsm) SendEvent() {
 }
 
 func (this *GenFsm) SyncSendEvent() {}
+
+func (this *GenFsm) RegisterHandler()

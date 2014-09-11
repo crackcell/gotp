@@ -30,3 +30,7 @@ type Resp struct {
 	Value interface{}
 	Err   error
 }
+
+func Pack(args ...interface{}) []interface{} {
+	return args
+}

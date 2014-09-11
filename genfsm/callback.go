@@ -20,35 +20,16 @@
 
 package genfsm
 
-// Message tag
-const (
-	ok = 1 << iota
-	reply
-	noreply
-	nextState
-	stop
-)
+// $Msg, $Data -> NextState, {$NextState, $NewData}
+//             -> Stop, {$Reason, $NewData}
+type EventHandler func(msg, data interface{}) (int, []interface{})
 
-// $Msg, $StateName, $Data -> NextState, {$NextStateName, $NewData}
-//                         -> Stop, {$Reason, $NewData}
-type EventHandler func(msg, state, data interface{}) (int, []interface{})
-
-// $Msg, $StateName, $Data -> NextState, {$Reply, $NextStateName, $NewData}
-//                         -> Stop, {$Reason, $NewData}
-type SyncEventHandler func(msg, state, data interface{}) (int, []interface{})
+// $Msg, $Data -> NextState, {$Reply, $NextState, $NewData}
+//             -> Stop, {$Reason, $NewData}
+type SyncEventHandler func(msg, data interface{}) (int, []interface{})
 
 type Callback interface {
-	// args -> Ok, $NextStateName, $InitData
-	//      -> Stop, $Reason, nil
-	Init(args interface{}) (int, interface{}, interface{})
-
-	// msg, state_name, data -> NextState, $NextStateName, $NewData
-	//                       -> Stop, $Reason, $NewData
-	HandleEvent(msg, state, data interface{}) (int, interface{}, interface{}, interface{})
-	// msg, state_name, data -> Reply, $Reply, $NextStateName, $NewData
-	//                       -> Stop, $Reason, nil, $NewData
-	HandleSyncEvent(msg, state, data interface{}) (int, interface{}, interface{}, interface{})
-	// msg, state_name, data ->
-	HandleGlobalEvent(msg, state, data interface{}) (int, interface{}, interface{})
-	HandleGlobalSyncEvent(msg, state, data interface{}) (int, interface{}, interface{})
+	// args -> Ok, {$NextState, $InitData}
+	//      -> Stop, {$Reason}
+	Init(args interface{}) (int, []interface{})
 }
