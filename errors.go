@@ -31,4 +31,6 @@ var (
 	ErrUnknownTag       = errors.New("unknown tag")
 	ErrAlreadyRegisterd = errors.New("already registered")
 	ErrAlreadyStarted   = errors.New("already started")
+	ErrInvalidArgs      = errors.New("invalid arguments")
+	ErrUnInit           = errors.New("module uninitialized")
 )

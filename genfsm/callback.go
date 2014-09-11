@@ -29,6 +29,14 @@ const (
 	stop
 )
 
+// $Msg, $StateName, $Data -> NextState, {$NextStateName, $NewData}
+//                         -> Stop, {$Reason, $NewData}
+type EventHandler func(msg, state, data interface{}) (int, []interface{})
+
+// $Msg, $StateName, $Data -> NextState, {$Reply, $NextStateName, $NewData}
+//                         -> Stop, {$Reason, $NewData}
+type SyncEventHandler func(msg, state, data interface{}) (int, []interface{})
+
 type Callback interface {
 	// args -> Ok, $NextStateName, $InitData
 	//      -> Stop, $Reason, nil

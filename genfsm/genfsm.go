@@ -29,13 +29,18 @@ import (
 type genFsmCallback struct{}
 
 type genFsmState struct {
-	callback Callback
-	state    interface{}
-	data     interface{}
+	callback     Callback
+	data         interface{}
+	state        string
+	handlers     map[string]EventHandler
+	syncHandlers map[string]SyncEventHandler
 }
 
 const (
-	reqTransferState = 1 << iota
+	reqRegisterHandler = 1 << iota
+	reqRegisterSyncHandler
+	reqSendEvent
+	reqSendSyncEvent
 )
 
 type genFsmCallbackMsg struct {
@@ -52,14 +57,18 @@ func (this genFsmCallback) Init(args interface{}) (int, interface{}) {
 	log.Println("[GenFsm] init:", args)
 	a := args.(initArgs)
 	tag, nextState, data := a.callback.Init(a.args)
-	return genserver.Ok, genFsmState{args.(Callback), nextState, data}
+	return genserver.Ok, genFsmState{callback: args.(Callback), data: data,
+		valid: false, state: nextState, currentHandler: nil, // nil handler, need init
+		make(map[string]EventHandler),
+		make(map[string]EventHandler)}
 }
 
 func (this genFsmCallback) HandleCall(msg, state interface{}) (int, interface{}, interface{}) {
 	log.Println("[GenFsm] call")
 	m := msg.(genFsmCallbackMsg)
 	switch m.tag {
-	case reqTransferState:
+	case reqSendSyncEvent:
+		// TODO
 	default:
 		panic(gotp.ErrUnknownTag)
 	}
@@ -69,7 +78,28 @@ func (this genFsmCallback) HandleCast(msg, state interface{}) (int, interface{},
 	log.Println("[GenFsm] cast")
 	m := msg.(genFsmCallbackMsg)
 	switch m.tag {
-	case reqTransferState:
+	case reqRegisterHandler:
+		// Args:
+		//  0 - state name
+		//  1 - handler
+		if len(m.args) != 2 {
+			panic(gotp.ErrInvalidArgs)
+		}
+		state := m.args[0].(int)
+		handler := m.args[1].(EventHandler)
+		this.handlers[stateName] = handler
+	case reqRegisterSyncHandler:
+		// Args:
+		//  0 - state name
+		//  1 - handler
+		if len(m.args) != 2 {
+			panic(gotp.ErrInvalidArgs)
+		}
+		state := m.args[0].(int)
+		handler := m.args[1].(EventHandler)
+		this.syncHandlers[stateName] = handler
+	case reqSendEvent:
+		// TODO
 	default:
 		panic(gotp.ErrUnknownTag)
 	}
@@ -79,12 +109,6 @@ func (this genFsmCallback) Terminate(reason, state interface{}) {
 	log.Printf("[GenFsm] Terminate: reason: %s\n", reason)
 }
 
-// GenFsm message tag
-const (
-	reqSend = 1 << iota
-	reqSyncSend
-)
-
 type GenFsm struct {
 	server genserver.GenServer
 }
@@ -93,6 +117,8 @@ func (this *GenFsm) Start(callback Callback, args interface{}) {
 	this.server.Start(genFsmCallback, initArgs{args, callback})
 }
 
-func (this *GenFsm) SendEvent() {}
+func (this *GenFsm) SendEvent() {
+	this.server.Cast(genFsmCallbackMsg{reqSendEvent})
+}
 
 func (this *GenFsm) SyncSendEvent() {}
