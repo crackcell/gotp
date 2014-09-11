@@ -31,11 +31,16 @@ const (
 
 type Callback interface {
 	// args -> Ok, $NextStateName, $InitData
-	//      -> Stop, nil, $Reason
+	//      -> Stop, $Reason, nil
 	Init(args interface{}) (int, interface{}, interface{})
 
 	// msg, state_name, data -> NextState, $NextStateName, $NewData
 	//                       -> Stop, $Reason, $NewData
-	HandleEvent(msg interface{}, state interface{}, data interface{}) (int, interface{}, interface{})
-	HandleAllEvent(msg interface{})
+	HandleEvent(msg, state, data interface{}) (int, interface{}, interface{}, interface{})
+	// msg, state_name, data -> Reply, $Reply, $NextStateName, $NewData
+	//                       -> Stop, $Reason, nil, $NewData
+	HandleSyncEvent(msg, state, data interface{}) (int, interface{}, interface{}, interface{})
+	// msg, state_name, data ->
+	HandleGlobalEvent(msg, state, data interface{}) (int, interface{}, interface{})
+	HandleGlobalSyncEvent(msg, state, data interface{}) (int, interface{}, interface{})
 }
