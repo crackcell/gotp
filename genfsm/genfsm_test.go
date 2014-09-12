@@ -26,28 +26,18 @@ import (
 	"testing"
 )
 
-// state names
-const (
-	sit = 1 << iota
-	stand
-)
-
 type dog struct{}
 
 func (this dog) Init(args interface{}) (int, []interface{}) {
 	log.Println("dog - init:", args)
-	return NextState, gotp.Pack(sit, 1)
+	return NextState, gotp.Pack("Sit", 1)
 }
 
 // sync handler
-func (this dog) Pet(msg, data interface{}) (int, []interface{}) {
+func (this dog) Sit(args []interface{}) []interface{} {
 	count := data.(int)
 	log.Println("dog - pet")
 	return NextState, gotp.Pack(count+1, stand)
 }
 
 var fsm GenFsm
-
-func TestReigsterHandlers(t *testing.T) {
-
-}

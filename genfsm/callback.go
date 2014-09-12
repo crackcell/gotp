@@ -20,13 +20,21 @@
 
 package genfsm
 
-// $Msg, $Data -> NextState, {$NextState, $NewData}
-//             -> Stop, {$Reason, $NewData}
-type EventHandler func(msg, data interface{}) (int, []interface{})
+const (
+	Ok = 1 << iota
+	Stop
+	NextState
+)
 
-// $Msg, $Data -> NextState, {$Reply, $NextState, $NewData}
-//             -> Stop, {$Reason, $NewData}
-type SyncEventHandler func(msg, data interface{}) (int, []interface{})
+type StateType string
+
+// $Args -> {NextState, $NextState, $NewData}
+//       -> {Stop, $Reason}
+type EventHandler func(args []interface{}) []interface{}
+
+// $Args -> NextState, {$Reply, $NextState, $NewData}
+//       -> Stop, {$Reason, $NewData}
+type SyncEventHandler func(args ...interface{}) (int, []interface{})
 
 type Callback interface {
 	// args -> Ok, {$NextState, $InitData}

@@ -34,3 +34,9 @@ type Resp struct {
 func Pack(args ...interface{}) []interface{} {
 	return args
 }
+
+func AssertArrayArity(array []interface{}, arity int) {
+	if len(array) != arity {
+		panic("BadArity")
+	}
+}
