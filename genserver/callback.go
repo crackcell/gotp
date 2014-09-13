@@ -34,14 +34,14 @@ type Callback interface {
 	//      -> Stop, $Reason
 	Init(args ...interface{}) []interface{}
 
-	// msg, state -> Reply, $Reply, $NewState
-	//            -> Stop, $Reason, $NewState
-	HandleCall(msg, state interface{}) []interface{}
+	// state, args[] -> Reply, $Reply, $NewState
+	//               -> Stop, $Reason, $NewState
+	HandleCall(state interface{}, args ...interface{}) []interface{}
 
-	// msg, state -> Noreply, $NewState
-	//            -> Stop, $Reason, $NewState
-	HandleCast(msg, state interface{}) []interface{}
+	// state, args[] -> Noreply, $NewState
+	//               -> Stop, $Reason, $NewState
+	HandleCast(state interface{}, args ...interface{}) []interface{}
 
 	// reason, state
-	Terminate(reason, state interface{})
+	Terminate(state interface{}, reason interface{})
 }

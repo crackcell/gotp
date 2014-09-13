@@ -28,12 +28,12 @@ const (
 
 type StateType string
 
-// $Args -> {NextState, $NextState, $NewData}
-//       -> {Stop, $Reason}
+// $Args -> [NextState, $NextState, $NewData]
+//       -> [Stop, $Reason]
 type EventHandler func(args ...interface{}) []interface{}
 
-// $Args -> NextState, {$Reply, $NextState, $NewData}
-//       -> Stop, {$Reason, $NewData}
+// $Args -> [NextState, $Reply, $NextState, $NewData]
+//       -> [Stop, $Reason, $NewData]
 type SyncEventHandler func(args ...interface{}) []interface{}
 
 type Callback interface {

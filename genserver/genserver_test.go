@@ -35,11 +35,6 @@ const (
 	cast2
 )
 
-type Msg struct {
-	Type  int
-	Value interface{}
-}
-
 type testServer struct{}
 
 type testState struct {
@@ -51,13 +46,11 @@ func (this testServer) Init(args ...interface{}) []interface{} {
 	return gotp.Pack(Ok, testState{0})
 }
 
-func (this testServer) HandleCall(msg, state interface{}) []interface{} {
-
+func (this testServer) HandleCall(state interface{}, args ...interface{}) []interface{} {
 	s := state.(testState)
 	s.loopCount += 1
-	m := msg.(Msg)
-	log.Printf("[testServer] HandleCall: recv: %s loopCount: %d\n", m.Value, s.loopCount)
-	switch m.Type {
+	log.Printf("[testServer] HandleCall: recv: %s loopCount: %d\n", args[1], s.loopCount)
+	switch args[0].(int) {
 	case call1:
 		return gotp.Pack(Reply, "reply", s)
 	case call2:
@@ -67,12 +60,11 @@ func (this testServer) HandleCall(msg, state interface{}) []interface{} {
 	}
 }
 
-func (this testServer) HandleCast(msg, state interface{}) []interface{} {
+func (this testServer) HandleCast(state interface{}, args ...interface{}) []interface{} {
 	s := state.(testState)
 	s.loopCount += 1
-	m := msg.(Msg)
-	log.Printf("[testServer] HandleCast: recv: %s loopCount: %d\n", m.Value, s.loopCount)
-	switch m.Type {
+	log.Printf("[testServer] HandleCast: recv: %s loopCount: %d\n", args[1], s.loopCount)
+	switch args[0].(int) {
 	case cast1:
 		return gotp.Pack(Noreply, s)
 	case cast2:
@@ -94,23 +86,23 @@ func TestStart(t *testing.T) {
 
 func TestCall1(t *testing.T) {
 	time.Sleep(2000)
-	ret := server.Call(Msg{call1, "call - 1"})
+	ret := server.Call(call1, "call - 1")
 	log.Println("[TestCall]", ret)
-	ret = server.Call(Msg{call1, "call1 - 2"})
+	ret = server.Call(call1, "call1 - 2")
 	log.Println("[TestCall]", ret)
 }
 
 func TestCast1(t *testing.T) {
-	server.Cast(Msg{cast1, "cast1 - 1"})
+	server.Cast(cast1, "cast1 - 1")
 }
 
 func TestCast2(t *testing.T) {
-	server.Cast(Msg{cast2, "cast2 - 2"})
+	server.Cast(cast2, "cast2 - 2")
 }
 
 /*
 func TestCall2(t *testing.T) {
-	ret := server.Call(Msg{call2, "call2"})
+	ret := server.Call(call2, "call2")
 	log.Println("[TestCast]", ret)
 }
 */

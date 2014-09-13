@@ -50,14 +50,14 @@ func (this *GenServer) handleReq() {
 		switch req.Type {
 		case reqCall:
 			// tag, reply, state
-			params := this.callback.HandleCall(req.Value, this.state)
+			params := this.callback.HandleCall(this.state, req.Value.([]interface{})...)
 			gotp.AssertArrayArity(params, 3)
 			tag = params[0].(int)
 			reply = params[1]
 			state = params[2]
 		case reqCast:
 			// tag, reply, state
-			params := this.callback.HandleCast(req.Value, this.state)
+			params := this.callback.HandleCast(this.state, req.Value.([]interface{})...)
 			switch len(params) {
 			case 2: // Noreply, $NewState
 				tag = params[0].(int)
@@ -123,15 +123,15 @@ func (this *GenServer) Start(callback Callback, args ...interface{}) {
 	})
 }
 
-func (this *GenServer) Call(msg interface{}) interface{} {
+func (this *GenServer) Call(args ...interface{}) interface{} {
 	this.checkInit()
 	ret := make(chan gotp.Resp)
-	this.ch <- gotp.Req{reqCall, msg, ret}
+	this.ch <- gotp.Req{reqCall, args, ret}
 	v := <-ret
 	return v.Value
 }
 
-func (this *GenServer) Cast(msg interface{}) {
+func (this *GenServer) Cast(args ...interface{}) {
 	this.checkInit()
-	this.ch <- gotp.Req{reqCast, msg, nil}
+	this.ch <- gotp.Req{reqCast, args, nil}
 }
