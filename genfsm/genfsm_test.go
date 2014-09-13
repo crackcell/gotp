@@ -37,7 +37,7 @@ func (this dog) Init(args interface{}) (int, []interface{}) {
 func (this dog) Sit(args []interface{}) []interface{} {
 	count := data.(int)
 	log.Println("dog - pet")
-	return NextState, gotp.Pack(count+1, stand)
+	return NextState, gotp.Pack(count+1, "Stand")
 }
 
 var fsm GenFsm

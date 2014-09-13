@@ -28,6 +28,7 @@ var (
 	ErrInit             = errors.New("init failed")
 	ErrStop             = errors.New("server stopped")
 	ErrNoCallback       = errors.New("no callback")
+	ErrInvalidCallback  = errors.New("invalid callback")
 	ErrNoHandler        = errors.New("no handler")
 	ErrUnknownTag       = errors.New("unknown tag")
 	ErrAlreadyRegisterd = errors.New("already registered")

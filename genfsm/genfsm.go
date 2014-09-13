@@ -45,32 +45,34 @@ type genFsmCallbackMsg struct {
 	args []interface{}
 }
 
-type initArgs struct {
-	args     interface{}
-	callback Callback
-}
-
-func (this genFsmCallback) Init(args interface{}) (int, interface{}) {
+func (this genFsmCallback) Init(args ...interface{}) []interface{} {
+	// args:
+	//   0 - args []interface{}
+	//   1 - callback
 	log.Println("[GenFsm] init:", args)
-	a := args.(initArgs)
-	tag, params := a.callback.Init(a.args)
-	if len(params) == 0 {
-		panic(gotp.ErrInvalidArgs)
+	gotp.AssertArrayArity(args, 2)
+	callback := args[1].(Callback)
+	params := callback.Init(args[0])
+	if len(params) < 2 {
+		panic(gotp.ErrInvalidCallback)
 	}
+	tag := params[0].(int)
 	switch tag {
-	case Ok: // Ok, {$NextState, $InitData}
-		return genserver.Ok, genFsmState{
-			callback: args.(Callback),
-			data:     params[1],
-			state:    params[0].(string)}
+	case Ok: // params: [Ok, $NextState, $InitData]
+		return gotp.Pack(genserver.Ok,
+			genFsmState{
+				callback: callback,
+				data:     params[1],
+				state:    params[0].(string),
+			})
 	case Stop:
-		return genserver.Stop, gotp.ErrInit
+		return gotp.Pack(genserver.Stop, gotp.ErrInit)
 	default:
 		panic(gotp.ErrUnknownTag)
 	}
 }
 
-func (this genFsmCallback) HandleCall(msg, state interface{}) (int, interface{}, interface{}) {
+func (this genFsmCallback) HandleCall(msg, state interface{}) []interface{} {
 	log.Println("[GenFsm] call")
 	m := msg.(genFsmCallbackMsg)
 	s := state.(genFsmState)
@@ -95,15 +97,15 @@ func (this genFsmCallback) HandleCall(msg, state interface{}) (int, interface{},
 			panic(gotp.ErrInvalidArgs)
 		}
 		switch tag {
-		case NextState: // params = {reply, next_state, new_data}
+		case NextState: // params = {Reply, $NextState, $NewData}
 			reply := params[0]
 			state := params[1].(string)
 			log.Printf("send_sync_event: %d -> $d\n", s.state, state)
 			s.state = state
 			s.data = params[2]
-			return genserver.Reply, reply, s
+			return gotp.Pack(genserver.Reply, reply, s)
 		case Stop:
-			return genserver.Stop, gotp.ErrStop, s
+			return gotp.Pack(genserver.Stop, gotp.ErrStop, s)
 		default:
 			panic(gotp.ErrUnknownTag)
 		}
@@ -112,7 +114,7 @@ func (this genFsmCallback) HandleCall(msg, state interface{}) (int, interface{},
 	}
 }
 
-func (this genFsmCallback) HandleCast(msg, state interface{}) (int, interface{}, interface{}) {
+func (this genFsmCallback) HandleCast(msg, state interface{}) []interface{} {
 	log.Println("[GenFsm] cast")
 	m := msg.(genFsmCallbackMsg)
 	s := state.(genFsmState)
@@ -132,10 +134,10 @@ func (this genFsmCallback) HandleCast(msg, state interface{}) (int, interface{},
 			gotp.AssertArrayArity(values, 3)
 			s.state = values[1].String()
 			s.data = values[2].Interface()
-			return genserver.Noreply, nil, s
+			return gotp.Pack(genserver.Noreply, s)
 		case Stop: // Stop, $Reason, $NewData
 			gotp.AssertArrayArity(values, 2)
-			return genserver.Stop, values[1].Interface(), s
+			return gotp.Pack(genserver.Stop, values[1].Interface(), s)
 		default:
 			panic(gotp.ErrUnknownTag)
 		}
@@ -153,7 +155,7 @@ type GenFsm struct {
 }
 
 func (this *GenFsm) Start(callback Callback, args interface{}) {
-	this.server.Start(genFsmCallback{}, initArgs{args, callback})
+	this.server.Start(genFsmCallback{}, []interface{}{args, callback})
 }
 
 func (this *GenFsm) SendEvent(state string) {
