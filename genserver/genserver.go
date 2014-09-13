@@ -45,13 +45,30 @@ func (this *GenServer) handleReq() {
 		//log.Println("handleReq")
 		req := <-this.ch
 		var tag int
-		var reply, state interface{}
+		var reply, state, reason interface{}
 
 		switch req.Type {
 		case reqCall:
-			tag, reply, state = this.callback.HandleCall(req.Value, this.state)
+			// tag, reply, state
+			params := this.callback.HandleCall(req.Value, this.state)
+			gotp.AssertArrayArity(params, 3)
+			tag = params[0].(int)
+			reply = params[1]
+			state = params[2]
 		case reqCast:
-			tag, reply, state = this.callback.HandleCast(req.Value, this.state)
+			// tag, reply, state
+			params := this.callback.HandleCast(req.Value, this.state)
+			switch len(params) {
+			case 2: // Noreply, $NewState
+				tag = params[0].(int)
+				state = params[1]
+			case 3: // Stop, $Reason, $NewState
+				tag = params[0].(int)
+				reason = params[1]
+				state = params[2]
+			default:
+				panic(gotp.ErrInvalidArgs)
+			}
 		}
 
 		this.state = state
@@ -60,11 +77,11 @@ func (this *GenServer) handleReq() {
 			req.Ret <- gotp.Resp{reply, nil}
 		case Noreply: // DO NOTHING
 		case Stop:
-			this.callback.Terminate(reply, this.state) // Reason, state
+			this.callback.Terminate(reason, this.state) // Reason, state
 			if req.Type == reqCall {
 				req.Ret <- gotp.Resp{nil, nil}
 			}
-			log.Print(gotp.ErrStop, ", reason: ", reply)
+			log.Print(gotp.ErrStop, ", reason: ", reason)
 			break
 		default:
 			panic(gotp.ErrUnknownTag)
@@ -72,8 +89,11 @@ func (this *GenServer) handleReq() {
 	}
 }
 
-func (this *GenServer) init(args interface{}) bool {
-	tag, state := this.callback.Init(args)
+func (this *GenServer) init(args ...interface{}) bool {
+	params := this.callback.Init(args)
+	gotp.AssertArrayArity(params, 2)
+	tag := params[0].(int)
+	state := params[1]
 	switch tag {
 	case Ok:
 		this.state = state
@@ -86,7 +106,13 @@ func (this *GenServer) init(args interface{}) bool {
 	return true
 }
 
-func (this *GenServer) Start(callback Callback, args interface{}) {
+func (this *GenServer) checkInit() {
+	if !this.hasServer {
+		panic(gotp.ErrNoCallback)
+	}
+}
+
+func (this *GenServer) Start(callback Callback, args ...interface{}) {
 	this.once.Do(func() {
 		this.ch = make(chan gotp.Req)
 		this.callback = callback
@@ -95,12 +121,6 @@ func (this *GenServer) Start(callback Callback, args interface{}) {
 			go this.handleReq()
 		}
 	})
-}
-
-func (this *GenServer) checkInit() {
-	if !this.hasServer {
-		panic(gotp.ErrNoCallback)
-	}
 }
 
 func (this *GenServer) Call(msg interface{}) interface{} {

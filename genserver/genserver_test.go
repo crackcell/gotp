@@ -21,6 +21,7 @@
 package genserver
 
 import (
+	"github.com/crackcell/gotp"
 	"log"
 	"testing"
 	"time"
@@ -45,12 +46,12 @@ type testState struct {
 	loopCount int
 }
 
-func (this testServer) Init(args interface{}) (int, interface{}) {
+func (this testServer) Init(args ...interface{}) []interface{} {
 	log.Println("[testServer] args:", args)
-	return Ok, testState{0}
+	return gotp.Pack(Ok, testState{0})
 }
 
-func (this testServer) HandleCall(msg, state interface{}) (int, interface{}, interface{}) {
+func (this testServer) HandleCall(msg, state interface{}) []interface{} {
 
 	s := state.(testState)
 	s.loopCount += 1
@@ -58,24 +59,24 @@ func (this testServer) HandleCall(msg, state interface{}) (int, interface{}, int
 	log.Printf("[testServer] HandleCall: recv: %s loopCount: %d\n", m.Value, s.loopCount)
 	switch m.Type {
 	case call1:
-		return Reply, "reply", s
+		return gotp.Pack(Reply, "reply", s)
 	case call2:
-		return Stop, "call2", s
+		return gotp.Pack(Stop, "call2", s)
 	default:
 		panic("wrong case")
 	}
 }
 
-func (this testServer) HandleCast(msg, state interface{}) (int, interface{}, interface{}) {
+func (this testServer) HandleCast(msg, state interface{}) []interface{} {
 	s := state.(testState)
 	s.loopCount += 1
 	m := msg.(Msg)
 	log.Printf("[testServer] HandleCast: recv: %s loopCount: %d\n", m.Value, s.loopCount)
 	switch m.Type {
 	case cast1:
-		return Noreply, nil, s
+		return gotp.Pack(Noreply, s)
 	case cast2:
-		return Stop, "cast2", s
+		return gotp.Pack(Stop, "cast2", s)
 	default:
 		panic("wrong case")
 	}
@@ -103,13 +104,13 @@ func TestCast1(t *testing.T) {
 	server.Cast(Msg{cast1, "cast1 - 1"})
 }
 
-/*
 func TestCast2(t *testing.T) {
-	Cast(Msg{cast2, "cast2 - 2"})
+	server.Cast(Msg{cast2, "cast2 - 2"})
 }
-*/
 
+/*
 func TestCall2(t *testing.T) {
 	ret := server.Call(Msg{call2, "call2"})
 	log.Println("[TestCast]", ret)
 }
+*/

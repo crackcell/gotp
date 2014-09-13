@@ -30,15 +30,18 @@ const (
 
 // Callback interface
 type Callback interface {
-	// args -> Ok, $State
+	// args -> Ok, $NewState
 	//      -> Stop, $Reason
-	Init(args interface{}) (int, interface{})
-	// msg, state -> Reply, $Reply, $State
-	//            -> Stop, $Reason, $State
-	HandleCall(msg, state interface{}) (int, interface{}, interface{})
-	// msg, state -> Reply, nil, $State
-	//            -> Stop, $Reason, $State
-	HandleCast(msg, state interface{}) (int, interface{}, interface{})
+	Init(args ...interface{}) []interface{}
+
+	// msg, state -> Reply, $Reply, $NewState
+	//            -> Stop, $Reason, $NewState
+	HandleCall(msg, state interface{}) []interface{}
+
+	// msg, state -> Noreply, $NewState
+	//            -> Stop, $Reason, $NewState
+	HandleCast(msg, state interface{}) []interface{}
+
 	// reason, state
 	Terminate(reason, state interface{})
 }
