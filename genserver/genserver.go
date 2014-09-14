@@ -90,7 +90,7 @@ func (this *GenServer) handleReq() {
 }
 
 func (this *GenServer) init(args ...interface{}) bool {
-	params := this.callback.Init(args)
+	params := this.callback.Init(args...)
 	gotp.AssertArrayArity(params, 2)
 	tag := params[0].(int)
 	state := params[1]

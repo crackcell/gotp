@@ -81,7 +81,7 @@ func (this testServer) Terminate(reason, state interface{}) {
 var server GenServer
 
 func TestStart(t *testing.T) {
-	server.Start(testServer{}, "args")
+	server.Start(testServer{}, "init args")
 }
 
 func TestCall1(t *testing.T) {
