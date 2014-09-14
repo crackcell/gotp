@@ -20,14 +20,6 @@
 
 package genserver
 
-// Message tag
-const (
-	Ok = 1 << iota
-	Reply
-	Noreply // for cast
-	Stop
-)
-
 // Callback interface
 type Callback interface {
 	// args -> Ok, $NewState

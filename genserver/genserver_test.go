@@ -43,7 +43,7 @@ type testState struct {
 
 func (this testServer) Init(args ...interface{}) []interface{} {
 	log.Println("[testServer] args:", args)
-	return gotp.Pack(Ok, testState{0})
+	return gotp.Pack(gotp.Ok, testState{0})
 }
 
 func (this testServer) HandleCall(state interface{}, args ...interface{}) []interface{} {
@@ -52,9 +52,9 @@ func (this testServer) HandleCall(state interface{}, args ...interface{}) []inte
 	log.Printf("[testServer] HandleCall: recv: %s loopCount: %d\n", args[1], s.loopCount)
 	switch args[0].(int) {
 	case call1:
-		return gotp.Pack(Reply, "reply", s)
+		return gotp.Pack(gotp.Reply, "reply", s)
 	case call2:
-		return gotp.Pack(Stop, "call2", s)
+		return gotp.Pack(gotp.Stop, "call2", s)
 	default:
 		panic("wrong case")
 	}
@@ -66,9 +66,9 @@ func (this testServer) HandleCast(state interface{}, args ...interface{}) []inte
 	log.Printf("[testServer] HandleCast: recv: %s loopCount: %d\n", args[1], s.loopCount)
 	switch args[0].(int) {
 	case cast1:
-		return gotp.Pack(Noreply, s)
+		return gotp.Pack(gotp.Noreply, s)
 	case cast2:
-		return gotp.Pack(Stop, "cast2", s)
+		return gotp.Pack(gotp.Stop, "cast2", s)
 	default:
 		panic("wrong case")
 	}

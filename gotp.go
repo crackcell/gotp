@@ -20,6 +20,14 @@
 
 package gotp
 
+// Message tag
+const (
+	Ok = 1 << iota
+	Reply
+	Noreply // for cast
+	Stop
+)
+
 type Req struct {
 	Type  int
 	Value interface{}

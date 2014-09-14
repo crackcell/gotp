@@ -73,15 +73,15 @@ func (this *GenServer) handleReq() {
 
 		this.state = state
 		switch tag {
-		case Reply:
+		case gotp.Reply:
 			req.Ret <- gotp.Resp{reply, nil}
-		case Noreply: // DO NOTHING
-		case Stop:
+		case gotp.Noreply: // DO NOTHING
+		case gotp.Stop:
 			this.callback.Terminate(reason, this.state) // Reason, state
 			if req.Type == reqCall {
 				req.Ret <- gotp.Resp{nil, nil}
 			}
-			log.Print(gotp.ErrStop, ", reason: ", reason)
+			//log.Print(gotp.ErrStop, ", reason: ", reason)
 			break
 		default:
 			panic(gotp.ErrUnknownTag)
@@ -95,9 +95,9 @@ func (this *GenServer) init(args ...interface{}) bool {
 	tag := params[0].(int)
 	state := params[1]
 	switch tag {
-	case Ok:
+	case gotp.Ok:
 		this.state = state
-	case Stop:
+	case gotp.Stop:
 		log.Fatal(gotp.ErrInit)
 		return false
 	default:
