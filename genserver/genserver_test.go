@@ -37,38 +37,36 @@ const (
 
 type testServer struct{}
 
-type testState struct {
-	loopCount int
-}
+type state []interface{}
 
 func (this testServer) Init(args ...interface{}) []interface{} {
 	log.Println("[testServer] args:", args)
-	return gotp.Pack(gotp.Ok, testState{0})
+	return gotp.Pack(gotp.Ok, state{0})
 }
 
-func (this testServer) HandleCall(state interface{}, args ...interface{}) []interface{} {
-	s := state.(testState)
-	s.loopCount += 1
-	log.Printf("[testServer] HandleCall: recv: %s loopCount: %d\n", args[1], s.loopCount)
+func (this testServer) HandleCall(s interface{}, args ...interface{}) []interface{} {
+	ss := s.(state)
+	ss[0] = ss[0].(int) + 1
+	log.Printf("[testServer] HandleCall: recv: %s loopCount: %d\n", args[1], ss[0])
 	switch args[0].(int) {
 	case call1:
-		return gotp.Pack(gotp.Reply, "reply", s)
+		return gotp.Pack(gotp.Reply, "reply", ss)
 	case call2:
-		return gotp.Pack(gotp.Stop, "call2", s)
+		return gotp.Pack(gotp.Stop, "call2", ss)
 	default:
 		panic("wrong case")
 	}
 }
 
-func (this testServer) HandleCast(state interface{}, args ...interface{}) []interface{} {
-	s := state.(testState)
-	s.loopCount += 1
-	log.Printf("[testServer] HandleCast: recv: %s loopCount: %d\n", args[1], s.loopCount)
+func (this testServer) HandleCast(s interface{}, args ...interface{}) []interface{} {
+	ss := s.(state)
+	ss[0] = ss[0].(int) + 1
+	log.Printf("[testServer] HandleCast: recv: %s loopCount: %d\n", args[1], ss[0])
 	switch args[0].(int) {
 	case cast1:
-		return gotp.Pack(gotp.Noreply, s)
+		return gotp.Pack(gotp.Noreply, ss)
 	case cast2:
-		return gotp.Pack(gotp.Stop, "cast2", s)
+		return gotp.Pack(gotp.Stop, "cast2", ss)
 	default:
 		panic("wrong case")
 	}
