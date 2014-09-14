@@ -39,6 +39,29 @@ type GenServer struct {
 	state     interface{}
 }
 
+func (this *GenServer) init(args ...interface{}) bool {
+	params := this.callback.Init(args...)
+	gotp.AssertArrayArity(params, 2)
+	tag := params[0].(int)
+	state := params[1]
+	switch tag {
+	case gotp.Ok:
+		this.state = state
+	case gotp.Stop:
+		log.Fatal(gotp.ErrInit)
+		return false
+	default:
+		panic(gotp.ErrUnknownTag)
+	}
+	return true
+}
+
+func (this *GenServer) checkInit() {
+	if !this.hasServer {
+		panic(gotp.ErrNoCallback)
+	}
+}
+
 func (this *GenServer) handleReq() {
 	//log.Println("handleReq starts")
 	for {
@@ -86,29 +109,6 @@ func (this *GenServer) handleReq() {
 		default:
 			panic(gotp.ErrUnknownTag)
 		}
-	}
-}
-
-func (this *GenServer) init(args ...interface{}) bool {
-	params := this.callback.Init(args...)
-	gotp.AssertArrayArity(params, 2)
-	tag := params[0].(int)
-	state := params[1]
-	switch tag {
-	case gotp.Ok:
-		this.state = state
-	case gotp.Stop:
-		log.Fatal(gotp.ErrInit)
-		return false
-	default:
-		panic(gotp.ErrUnknownTag)
-	}
-	return true
-}
-
-func (this *GenServer) checkInit() {
-	if !this.hasServer {
-		panic(gotp.ErrNoCallback)
 	}
 }
 
