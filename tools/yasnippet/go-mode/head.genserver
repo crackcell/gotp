@@ -1,0 +1,75 @@
+#name : head.genserver
+# --
+/* -*- encoding: utf-8; indent-tabs-mode: t -*- */
+
+/***************************************************************
+ *
+ * Copyright (c) `(format-time-string "%Y")`, Menglong TAN <tanmenglong@gmail.com>
+ *
+ * This program is free software; you can redistribute it
+ * and/or modify it under the terms of the GPL licence
+ *
+ **************************************************************/
+
+/**
+ * $1
+ *
+ * @file `(file-name-nondirectory (buffer-file-name))`
+ * @author Menglong TAN <tanmenglong@gmail.com>
+ * @date `(current-time-string)`
+ *
+ **/
+
+package ${2:main}
+
+import (
+	"github.com/crackcell/gotp"
+	"github.com/crackcell/gotp/genserver"
+	"sync"
+)
+
+//===================================================================
+// Public APIs
+//===================================================================
+
+type ${3:Service} struct {
+	once   sync.Once
+	server genserver.GenServer
+}
+
+//===================================================================
+// GenServer callbacks
+//===================================================================
+
+type state []interface{}
+
+type callback struct{}
+
+func (this callback) Init(args ...interface{}) []interface{} {
+	return gotp.Pack(gotp.Ok, state{})
+}
+
+func (this callback) HandleCall(s interface{}, args ...interface{}) []interface{} {
+	return gotp.Pack(gotp.Reply, "dummy reply", state{})
+}
+
+func (this callback) HandleCast(s interface{}, args ...interface{}) []interface{} {
+	return gotp.Pack(gotp.Noreply, s)
+}
+
+func (this callback) Terminate(s, reason interface{}) {}
+
+//===================================================================
+// Internal functions
+//===================================================================
+
+// Message tag
+const (
+	reqA = 1 << iota
+)
+
+func (this *$3) init() {
+	this.once.Do(func() {
+		this.server.Start(callback{}, nil)
+	})
+}
