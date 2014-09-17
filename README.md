@@ -12,4 +12,4 @@ Golang service framework inspired by Erlang/OTP.
 
 ## Projects using Gotp
 
-* [Goncurrent](https://github.com/crackcell/goncurrent): thread-safety containers.
+* [Goncurrent](https://github.com/crackcell/goncurrent): thread-safe containers.
