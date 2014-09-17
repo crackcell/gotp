@@ -43,8 +43,14 @@ func Pack(args ...interface{}) []interface{} {
 	return args
 }
 
+func Assert(cond bool) {
+	if !cond {
+		panic("Assertion failed")
+	}
+}
+
 func AssertArrayArity(array []interface{}, arity int) {
 	if len(array) != arity {
-		panic("BadArity")
+		panic("Bad arity")
 	}
 }
