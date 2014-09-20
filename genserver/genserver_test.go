@@ -27,7 +27,7 @@ import (
 	"time"
 )
 
-// Message tage
+// Message tag
 const (
 	call1 = 1 << iota
 	call2
