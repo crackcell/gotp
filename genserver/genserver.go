@@ -119,7 +119,7 @@ func (this *GenServer) Start(callback Callback, args ...interface{}) {
 		this.c = make(chan gotp.Req)
 		this.callback = callback
 		this.hasServer = true
-		if this.init(args) {
+		if this.init(args...) {
 			go this.handleReq()
 		}
 	})
