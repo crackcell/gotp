@@ -32,7 +32,7 @@ const (
 )
 
 type GenServer struct {
-	ch        chan gotp.Req
+	c         chan gotp.Req
 	once      sync.Once
 	hasServer bool
 	callback  Callback
@@ -66,7 +66,7 @@ func (this *GenServer) handleReq() {
 	//log.Println("handleReq starts")
 	for {
 		//log.Println("handleReq")
-		req := <-this.ch
+		req := <-this.c
 		var tag int
 		var reply, state, reason interface{}
 
@@ -74,7 +74,9 @@ func (this *GenServer) handleReq() {
 		case reqCall:
 			// tag, reply, state
 			params := this.callback.HandleCall(this.state, req.Value.([]interface{})...)
-			gotp.AssertArrayArity(params, 3)
+			if len(params) != 3 {
+				panic(gotp.ErrInvalidCallback)
+			}
 			tag = params[0].(int)
 			reply = params[1]
 			state = params[2]
@@ -90,7 +92,7 @@ func (this *GenServer) handleReq() {
 				reason = params[1]
 				state = params[2]
 			default:
-				panic(gotp.ErrInvalidArgs)
+				panic(gotp.ErrInvalidCallback)
 			}
 		}
 
@@ -114,7 +116,7 @@ func (this *GenServer) handleReq() {
 
 func (this *GenServer) Start(callback Callback, args ...interface{}) {
 	this.once.Do(func() {
-		this.ch = make(chan gotp.Req)
+		this.c = make(chan gotp.Req)
 		this.callback = callback
 		this.hasServer = true
 		if this.init(args) {
@@ -126,12 +128,12 @@ func (this *GenServer) Start(callback Callback, args ...interface{}) {
 func (this *GenServer) Call(args ...interface{}) interface{} {
 	this.checkInit()
 	ret := make(chan gotp.Resp)
-	this.ch <- gotp.Req{reqCall, args, ret}
+	this.c <- gotp.Req{reqCall, args, ret}
 	v := <-ret
 	return v.Value
 }
 
 func (this *GenServer) Cast(args ...interface{}) {
 	this.checkInit()
-	this.ch <- gotp.Req{reqCast, args, nil}
+	this.c <- gotp.Req{reqCast, args, nil}
 }
