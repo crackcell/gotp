@@ -28,17 +28,6 @@ const (
 	Stop
 )
 
-type Req struct {
-	Type  int
-	Value interface{}
-	Ret   chan Resp
-}
-
-type Resp struct {
-	Value interface{}
-	Err   error
-}
-
 func Pack(args ...interface{}) []interface{} {
 	return args
 }
