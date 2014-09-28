@@ -32,7 +32,7 @@ const (
 )
 
 type GenServer struct {
-	C         chan gotp.Req
+	C         chan []interface{}
 	once      sync.Once
 	hasServer bool
 	callback  Callback
@@ -70,10 +70,17 @@ func (this *GenServer) handleReq() {
 		var tag int
 		var reply, state, reason interface{}
 
-		switch req.Type {
+		gotp.Assert(len(req) >= 2)
+
+		reqType := req[0].(int)
+		reqValue := req[1]
+		var reqRet chan []interface{}
+
+		switch reqType {
 		case reqCall:
+			reqRet = req[2].(chan []interface{})
 			// tag, reply, state
-			params := this.callback.HandleCall(this.state, req.Value.([]interface{})...)
+			params := this.callback.HandleCall(this.state, reqValue.([]interface{})...)
 			if len(params) != 3 {
 				panic(gotp.ErrInvalidCallback)
 			}
@@ -82,7 +89,7 @@ func (this *GenServer) handleReq() {
 			state = params[2]
 		case reqCast:
 			// tag, reply, state
-			params := this.callback.HandleCast(this.state, req.Value.([]interface{})...)
+			params := this.callback.HandleCast(this.state, reqValue.([]interface{})...)
 			switch len(params) {
 			case 2: // Noreply, $NewState
 				tag = params[0].(int)
@@ -99,12 +106,12 @@ func (this *GenServer) handleReq() {
 		this.state = state
 		switch tag {
 		case gotp.Reply:
-			req.Ret <- gotp.Resp{reply, nil}
+			reqRet <- gotp.Pack(reply)
 		case gotp.Noreply: // DO NOTHING
 		case gotp.Stop:
 			this.callback.Terminate(reason, this.state) // Reason, state
-			if req.Type == reqCall {
-				req.Ret <- gotp.Resp{nil, nil}
+			if reqType == reqCall {
+				reqRet <- gotp.Pack()
 			}
 			//log.Print(gotp.ErrStop, ", reason: ", reason)
 			break
@@ -116,7 +123,7 @@ func (this *GenServer) handleReq() {
 
 func (this *GenServer) Start(callback Callback, args ...interface{}) {
 	this.once.Do(func() {
-		this.C = make(chan gotp.Req)
+		this.C = make(chan []interface{})
 		this.callback = callback
 		this.hasServer = true
 		if this.init(args...) {
@@ -127,13 +134,13 @@ func (this *GenServer) Start(callback Callback, args ...interface{}) {
 
 func (this *GenServer) Call(args ...interface{}) interface{} {
 	this.checkInit()
-	ret := make(chan gotp.Resp)
-	this.C <- gotp.Req{reqCall, args, ret}
+	ret := make(chan []interface{})
+	this.C <- gotp.Pack(reqCall, args, ret)
 	v := <-ret
-	return v.Value
+	return v[0]
 }
 
 func (this *GenServer) Cast(args ...interface{}) {
 	this.checkInit()
-	this.C <- gotp.Req{reqCast, args, nil}
+	this.C <- gotp.Pack(reqCast, args)
 }
