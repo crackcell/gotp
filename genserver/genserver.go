@@ -32,7 +32,7 @@ const (
 )
 
 type GenServer struct {
-	c         chan gotp.Req
+	C         chan gotp.Req
 	once      sync.Once
 	hasServer bool
 	callback  Callback
@@ -66,7 +66,7 @@ func (this *GenServer) handleReq() {
 	//log.Println("handleReq starts")
 	for {
 		//log.Println("handleReq")
-		req := <-this.c
+		req := <-this.C
 		var tag int
 		var reply, state, reason interface{}
 
@@ -116,7 +116,7 @@ func (this *GenServer) handleReq() {
 
 func (this *GenServer) Start(callback Callback, args ...interface{}) {
 	this.once.Do(func() {
-		this.c = make(chan gotp.Req)
+		this.C = make(chan gotp.Req)
 		this.callback = callback
 		this.hasServer = true
 		if this.init(args...) {
@@ -128,12 +128,12 @@ func (this *GenServer) Start(callback Callback, args ...interface{}) {
 func (this *GenServer) Call(args ...interface{}) interface{} {
 	this.checkInit()
 	ret := make(chan gotp.Resp)
-	this.c <- gotp.Req{reqCall, args, ret}
+	this.C <- gotp.Req{reqCall, args, ret}
 	v := <-ret
 	return v.Value
 }
 
 func (this *GenServer) Cast(args ...interface{}) {
 	this.checkInit()
-	this.c <- gotp.Req{reqCast, args, nil}
+	this.C <- gotp.Req{reqCast, args, nil}
 }
