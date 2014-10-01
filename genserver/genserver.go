@@ -29,6 +29,7 @@ import (
 const (
 	reqCall = 1 << iota
 	reqCast
+	reqInfo
 )
 
 type GenServer struct {
