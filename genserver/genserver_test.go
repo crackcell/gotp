@@ -72,6 +72,13 @@ func (this testServer) HandleCast(s interface{}, args ...interface{}) []interfac
 	}
 }
 
+func (this testServer) HandleInfo(s interface{}, args ...interface{}) []interface{} {
+	ss := s.(state)
+	ss[0] = ss[0].(int) + 1
+	log.Printf("[testServer] HandleInfo: %recv: %s loopCount: %d\n", args[1], ss[0])
+	return gotp.Pack(gotp.Noreply, ss)
+}
+
 func (this testServer) Terminate(reason, state interface{}) {
 	log.Printf("[testServer] Terminate: reason: %s\n", reason)
 }
@@ -84,9 +91,15 @@ func TestStart(t *testing.T) {
 
 func TestCall1(t *testing.T) {
 	time.Sleep(2000)
-	ret := server.Call(call1, "call - 1")
+	ret, err := server.Call(call1, "call - 1")
+	if err != nil {
+		t.Error(err)
+	}
 	log.Println("[TestCall]", ret)
-	ret = server.Call(call1, "call1 - 2")
+	ret, err = server.Call(call1, "call1 - 2")
+	if err != nil {
+		t.Error(err)
+	}
 	log.Println("[TestCall]", ret)
 }
 

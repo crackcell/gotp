@@ -64,61 +64,57 @@ func (this *GenServer) checkInit() {
 }
 
 func (this *GenServer) handleReq() {
-	//log.Println("handleReq starts")
 	for {
-		//log.Println("handleReq")
 		req := <-this.C
-		var tag int
-		var reply, state, reason interface{}
 
 		gotp.Assert(len(req) >= 2)
 
 		reqType := req[0].(int)
 		reqValue := req[1]
 		var reqRet chan []interface{}
+		var callbackRet []interface{}
 
 		switch reqType {
 		case reqCall:
+			gotp.Assert(len(req) == 3)
 			reqRet = req[2].(chan []interface{})
-			// tag, reply, state
-			params := this.callback.HandleCall(this.state, reqValue.([]interface{})...)
-			if len(params) != 3 {
-				panic(gotp.ErrInvalidCallback)
-			}
-			tag = params[0].(int)
-			reply = params[1]
-			state = params[2]
+			callbackRet = this.callback.HandleCall(this.state, reqValue.([]interface{})...)
 		case reqCast:
-			// tag, reply, state
-			params := this.callback.HandleCast(this.state, reqValue.([]interface{})...)
-			switch len(params) {
-			case 2: // Noreply, $NewState
-				tag = params[0].(int)
-				state = params[1]
-			case 3: // Stop, $Reason, $NewState
-				tag = params[0].(int)
-				reason = params[1]
-				state = params[2]
-			default:
-				panic(gotp.ErrInvalidCallback)
-			}
-		}
-
-		this.state = state
-		switch tag {
-		case gotp.Reply:
-			reqRet <- gotp.Pack(reply)
-		case gotp.Noreply: // DO NOTHING
-		case gotp.Stop:
-			this.callback.Terminate(reason, this.state) // Reason, state
-			if reqType == reqCall {
-				reqRet <- gotp.Pack()
-			}
-			//log.Print(gotp.ErrStop, ", reason: ", reason)
-			break
+			gotp.Assert(len(req) == 2)
+			callbackRet = this.callback.HandleCast(this.state, reqValue.([]interface{})...)
+		case reqInfo:
+			callbackRet = this.callback.HandleInfo(this.state, reqValue.([]interface{})...)
 		default:
 			panic(gotp.ErrUnknownTag)
 		}
+
+		var tag int
+		var reply, state, reason interface{}
+
+		tag = callbackRet[0].(int)
+		switch tag {
+		case gotp.Reply: // [Reply, $Reply, $NewState]
+			gotp.Assert(len(callbackRet) == 3)
+			reply = callbackRet[1]
+			state = callbackRet[2]
+			reqRet <- gotp.Pack(gotp.Reply, reply)
+		case gotp.Noreply: // [Noreply, $NewState]
+			gotp.Assert(len(callbackRet) == 2)
+			state = callbackRet[1]
+		case gotp.Stop: // [Stop, $Reason, $NewState]
+			gotp.Assert(len(callbackRet) == 3)
+			reason = callbackRet[1]
+			state = callbackRet[2]
+			this.callback.Terminate(reason, state) // $Reason, $NewState
+			if reqType == reqCall {
+				reqRet <- gotp.Pack(gotp.Stop, reason)
+			}
+			break
+		default:
+			panic(gotp.ErrInvalidCallback)
+		}
+
+		this.state = state
 	}
 }
 
@@ -133,12 +129,20 @@ func (this *GenServer) Start(callback Callback, args ...interface{}) {
 	})
 }
 
-func (this *GenServer) Call(args ...interface{}) interface{} {
+func (this *GenServer) Call(args ...interface{}) (interface{}, error) {
 	this.checkInit()
 	ret := make(chan []interface{})
 	this.C <- gotp.Pack(reqCall, args, ret)
 	v := <-ret
-	return v[0]
+	gotp.Assert(len(v) == 2) // [Reply, $Reply] or [Stop, $Reason]
+	switch v[0].(int) {
+	case gotp.Reply:
+		return v[1], nil
+	case gotp.Stop:
+		return v[1], gotp.ErrStop
+	default:
+		panic(gotp.ErrUnknownTag)
+	}
 }
 
 func (this *GenServer) Cast(args ...interface{}) {
