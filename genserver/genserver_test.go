@@ -75,7 +75,7 @@ func (this testServer) HandleCast(s interface{}, args ...interface{}) []interfac
 func (this testServer) HandleInfo(s interface{}, args ...interface{}) []interface{} {
 	ss := s.(state)
 	ss[0] = ss[0].(int) + 1
-	log.Printf("[testServer] HandleInfo: %recv: %s loopCount: %d\n", args[1], ss[0])
+	log.Printf("[testServer] HandleInfo: recv: %s loopCount: %d\n", args, ss[0])
 	return gotp.Pack(gotp.Noreply, ss)
 }
 
@@ -117,3 +117,7 @@ func TestCall2(t *testing.T) {
 	log.Println("[TestCast]", ret)
 }
 */
+
+func TestInfo(t *testing.T) {
+	server.C <- gotp.Pack(ReqInfo, gotp.Pack(2, 3))
+}
