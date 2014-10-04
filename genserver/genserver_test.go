@@ -118,6 +118,16 @@ func TestCall2(t *testing.T) {
 }
 */
 
-func TestInfo(t *testing.T) {
+/*
+func TestInfoWithChannel(t *testing.T) {
 	server.C <- gotp.Pack(ReqInfo, gotp.Pack(2, 3))
+}
+*/
+
+func TestInfoWithInfo(t *testing.T) {
+	server.Info(1, 2, 3)
+}
+
+func TestInfoWithSendInfo(t *testing.T) {
+	SendInfo(server.C, 1, 2, 3)
 }

@@ -67,20 +67,20 @@ func (this *GenServer) handleReq() {
 	for {
 		req := <-this.C
 
-		gotp.Assert(len(req) >= 2)
-
 		var reqType int
 		var reqValue interface{}
 		var reqRet chan []interface{}
 		var callbackRet []interface{}
 		var ok bool
 
-		if reqType, ok = req[0].(int); !ok {
-			reqType = ReqInfo
-			reqValue = req
-		} else {
-			reqValue = req[1]
+		// Check message
+		if len(req) < 2 {
+			panic(gotp.ErrUnknownTag)
 		}
+		if reqType, ok = req[0].(int); !ok {
+			panic(gotp.ErrUnknownTag)
+		}
+		reqValue = req[1]
 
 		switch reqType {
 		case ReqCall:
@@ -91,6 +91,7 @@ func (this *GenServer) handleReq() {
 			gotp.Assert(len(req) == 2)
 			callbackRet = this.callback.HandleCast(this.state, reqValue.([]interface{})...)
 		case ReqInfo:
+			gotp.Assert(len(req) == 2) // TODO: support HandleInfo with Reply
 			callbackRet = this.callback.HandleInfo(this.state, reqValue.([]interface{})...)
 		default:
 			panic(gotp.ErrUnknownTag)
@@ -157,4 +158,16 @@ func (this *GenServer) Call(args ...interface{}) (interface{}, error) {
 func (this *GenServer) Cast(args ...interface{}) {
 	this.checkCallback()
 	this.C <- gotp.Pack(ReqCast, args)
+}
+
+func (this *GenServer) Info(args ...interface{}) {
+	this.checkCallback()
+	//ch := make(chan []interface{})
+	this.C <- gotp.Pack(ReqInfo, args)
+	//ret := <-ch
+	//return ret, len(ret) != 0
+}
+
+func SendInfo(ch chan []interface{}, args ...interface{}) {
+	ch <- gotp.Pack(ReqInfo, args)
 }
