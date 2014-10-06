@@ -72,12 +72,12 @@ func (this testServer) HandleCast(s interface{}, args ...interface{}) []interfac
 	}
 }
 
-func (this testServer) HandleInfo(s interface{}, args ...interface{}) []interface{} {
-	ss := s.(state)
-	ss[0] = ss[0].(int) + 1
-	log.Printf("[testServer] HandleInfo: recv: %s loopCount: %d\n", args, ss[0])
-	return gotp.Pack(gotp.Noreply, ss)
-}
+//func (this testServer) HandleInfo(s interface{}, args ...interface{}) []interface{} {
+//	ss := s.(state)
+//	ss[0] = ss[0].(int) + 1
+//	log.Printf("[testServer] HandleInfo: recv: %s loopCount: %d\n", args, ss[0])
+//	return gotp.Pack(gotp.Noreply, ss)
+//}
 
 func (this testServer) Terminate(reason, state interface{}) {
 	log.Printf("[testServer] Terminate: reason: %s\n", reason)
@@ -124,10 +124,10 @@ func TestInfoWithChannel(t *testing.T) {
 }
 */
 
-func TestInfoWithInfo(t *testing.T) {
-	server.Info(1, 2, 3)
-}
+//func TestInfoWithInfo(t *testing.T) {
+//	server.Info(1, 2, 3)
+//}
 
-func TestInfoWithSendInfo(t *testing.T) {
-	SendInfo(server.C, 1, 2, 3)
-}
+//func TestInfoWithSendInfo(t *testing.T) {
+//	SendInfo(server.C, 1, 2, 3)
+//}

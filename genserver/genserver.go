@@ -29,7 +29,7 @@ import (
 const (
 	ReqCall = 1 << iota
 	ReqCast
-	ReqInfo
+	//ReqInfo
 )
 
 type GenServer struct {
@@ -90,9 +90,9 @@ func (this *GenServer) handleReq() {
 		case ReqCast:
 			gotp.Assert(len(req) == 2)
 			callbackRet = this.callback.HandleCast(this.state, reqValue.([]interface{})...)
-		case ReqInfo:
-			gotp.Assert(len(req) == 2) // TODO: support HandleInfo with Reply
-			callbackRet = this.callback.HandleInfo(this.state, reqValue.([]interface{})...)
+		//case ReqInfo:
+		//	gotp.Assert(len(req) == 2) // TODO: support HandleInfo with Reply
+		//	callbackRet = this.callback.HandleInfo(this.state, reqValue.([]interface{})...)
 		default:
 			panic(gotp.ErrUnknownTag)
 		}
@@ -104,7 +104,7 @@ func (this *GenServer) handleReq() {
 		switch tag {
 		case gotp.Reply: // [Reply, $Reply, $NewState]
 			gotp.Assert(len(callbackRet) == 3)
-			gotp.Assert(reqType != ReqInfo) // TODP: support HandleInfo with Reply
+			//gotp.Assert(reqType != ReqInfo) // TODP: support HandleInfo with Reply
 			reply = callbackRet[1]
 			state = callbackRet[2]
 			reqRet <- gotp.Pack(gotp.Reply, reply)
@@ -141,33 +141,38 @@ func (this *GenServer) Start(callback Callback, args ...interface{}) {
 
 func (this *GenServer) Call(args ...interface{}) (interface{}, error) {
 	this.checkCallback()
-	ret := make(chan []interface{})
-	this.C <- gotp.Pack(ReqCall, args, ret)
-	v := <-ret
-	gotp.Assert(len(v) == 2) // [Reply, $Reply] or [Stop, $Reason]
-	switch v[0].(int) {
-	case gotp.Reply:
-		return v[1], nil
-	case gotp.Stop:
-		return v[1], gotp.ErrStop
-	default:
-		panic(gotp.ErrUnknownTag)
-	}
+	return SendCall(this.C, args...)
 }
 
 func (this *GenServer) Cast(args ...interface{}) {
 	this.checkCallback()
-	this.C <- gotp.Pack(ReqCast, args)
+	SendCast(this.C, args...)
 }
 
-func (this *GenServer) Info(args ...interface{}) {
-	this.checkCallback()
-	//ch := make(chan []interface{})
-	this.C <- gotp.Pack(ReqInfo, args)
-	//ret := <-ch
-	//return ret, len(ret) != 0
+//func (this *GenServer) Info(args ...interface{}) {
+//	this.checkCallback()
+//	this.C <- gotp.Pack(ReqInfo, args)
+//}
+
+func SendCall(c chan []interface{}, args ...interface{}) (interface{}, error) {
+	ch := make(chan []interface{})
+	c <- gotp.Pack(ReqCall, args, ch)
+	ret := <-ch
+	gotp.Assert(len(ret) == 2) // [Reply, $Reply] or [Stop, $Reason]
+	switch ret[0].(int) {
+	case gotp.Reply:
+		return ret[1], nil
+	case gotp.Stop:
+		return ret[1], gotp.ErrStop
+	default:
+		return ret[1], gotp.ErrUnknownTag
+	}
 }
 
-func SendInfo(ch chan []interface{}, args ...interface{}) {
-	ch <- gotp.Pack(ReqInfo, args)
+func SendCast(c chan []interface{}, args ...interface{}) {
+	c <- gotp.Pack(ReqCast, args)
 }
+
+//func SendInfo(c chan []interface{}, args ...interface{}) {
+//	c <- gotp.Pack(ReqInfo, args)
+//}
