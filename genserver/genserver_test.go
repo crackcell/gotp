@@ -86,7 +86,14 @@ func (this testServer) Terminate(reason, state interface{}) {
 var server GenServer
 
 func TestStart(t *testing.T) {
-	server.Start(testServer{}, "init args")
+	if err := server.Start(testServer{}, "init args"); err != nil {
+		t.Error(err)
+	}
+}
+func TestStartTwice(t *testing.T) {
+	if err := server.Start(testServer{}, "init args"); err == nil {
+		t.Error(err)
+	}
 }
 
 func TestCall1(t *testing.T) {

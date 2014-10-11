@@ -23,18 +23,16 @@ package genserver
 import (
 	"github.com/crackcell/gotp"
 	"log"
-	"sync"
 )
 
 const (
 	ReqCall = 1 << iota
 	ReqCast
-	//ReqInfo
 )
 
 type GenServer struct {
 	C         chan []interface{}
-	once      sync.Once
+	start     bool
 	hasServer bool
 	callback  Callback
 	state     interface{}
@@ -128,15 +126,18 @@ func (this *GenServer) handleReq() {
 	}
 }
 
-func (this *GenServer) Start(callback Callback, args ...interface{}) {
-	this.once.Do(func() {
-		this.C = make(chan []interface{})
-		this.callback = callback
-		this.hasServer = true
-		if this.init(args...) {
-			go this.handleReq()
-		}
-	})
+func (this *GenServer) Start(callback Callback, args ...interface{}) error {
+	if this.start {
+		return gotp.ErrAlreadyStarted
+	}
+	this.C = make(chan []interface{})
+	this.callback = callback
+	this.hasServer = true
+	this.start = true
+	if this.init(args...) {
+		go this.handleReq()
+	}
+	return nil
 }
 
 func (this *GenServer) Call(args ...interface{}) (interface{}, error) {
