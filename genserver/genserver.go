@@ -166,7 +166,7 @@ func SendCall(c chan []interface{}, args ...interface{}) (interface{}, error) {
 	case gotp.Stop:
 		return ret[1], gotp.ErrStop
 	default:
-		return ret[1], gotp.ErrUnknownTag
+		panic(gotp.ErrUnknownTag)
 	}
 }
 
